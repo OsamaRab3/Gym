@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  password  String
+  role      Role      @default(USER) 
+  orders    Order[]
+  createdAt DateTime  @default(now())
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  products  Product[]
+}
+
+model Product {
+  id            Int            @id @default(autoincrement())
+  name          String
+  description   String?
+  price         Float
+  discount      Float?
+  stock         Int             @default(0)
+  color         String?         
+  manufacturer  String?        
+  imageUrl      String?        
+  rank          Int?           
+  category      Category?       @relation(fields: [categoryId], references: [id])
+  categoryId    Int?           
+  orderItems    OrderItem[]
+  deliveryFees  DeliveryFee[]
+  createdAt     DateTime        @default(now())
+}
+
+model Order {
+  id         Int         @id @default(autoincrement())
+  user       User        @relation(fields: [userId], references: [id])
+  userId     Int
+  orderItems OrderItem[]
+  totalPrice Float
+  status     String      @default("pending") // pending, paid, shipped, delivered
+  createdAt  DateTime    @default(now())
+}
+
+model OrderItem {
+  id        Int      @id @default(autoincrement())
+  order     Order    @relation(fields: [orderId], references: [id])
+  orderId   Int
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  quantity  Int      @default(1)
+  price     Float   
+}
+
+model Province {
+  id           Int           @id @default(autoincrement())
+  name         String        @unique
+  deliveryFees DeliveryFee[]
+}
+
+model DeliveryFee {
+  id         Int       @id @default(autoincrement())
+  product    Product   @relation(fields: [productId], references: [id])
+  productId  Int
+  province   Province  @relation(fields: [provinceId], references: [id])
+  provinceId Int
+  fee        Float
+}

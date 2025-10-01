@@ -7,17 +7,16 @@ const status = require('../../utils/status')
 
 
 
-const login = asyncErrorHandler(async (req, res) => {
+const login = asyncErrorHandler(async (req, res, next) => {
     const { email, password } = req.body;
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-
-        return next(new CustomError(`Validation errorr ${errors.array()[0].msg}`, 400))
+        return next(new CustomError(req.t('validation_error_with_detail', errors.array()[0].msg), 400))
     }
     const result =  await authServices.login(email,password)
 
     res.status(200).json({
-        message: "Login secuess",
+        message: req.t('login_success'),
         status: status.SUCCESS,
         data:{
             ...result

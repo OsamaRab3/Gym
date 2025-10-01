@@ -6,12 +6,12 @@ const verifyToken = (req, res, next) => {
   const authHeader = req.headers['authorization'] || req.headers['Authorization'];
   
   if (!authHeader?.startsWith('Bearer ')) {
-    return next(new CustomError("Missing or invalid authorization header", 401));
+    return next(new CustomError(req.t('missing_or_invalid_auth_header'), 401));
   }
 
   const token = authHeader.split(' ')[1]; 
   if (!token) {
-    return next(new CustomError("Access denied. No token provided.", 401));
+    return next(new CustomError(req.t('no_token_provided'), 401));
   }
 
   try {
@@ -19,7 +19,7 @@ const verifyToken = (req, res, next) => {
     req.user = decoded; 
     next();
   } catch (error) {
-    return next(new CustomError("Invalid token.", 401));
+    return next(new CustomError(req.t('invalid_token'), 401));
   }
 };
 

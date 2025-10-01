@@ -1,8 +1,10 @@
 const CustomError = require('../errors/CustomError')
+const { t } = require('../utils/i18n')
 
 module.exports = {
     NotFound:(req,res,next)=>{
-      const error = new CustomError (`Cannot find ${req.originalUrl} on this server`,404)
+      const message = t(req.lang, 'not_found_with_url', req.originalUrl)
+      const error = new CustomError (message,404)
       next(error)
     },
     globalError:(error, req, res, next) => {

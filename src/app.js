@@ -5,12 +5,16 @@ const cors = require('cors');
 
 const app = express();
 const { NotFound , globalError } = require('./middleware/errorHandler')
+const locale = require('./middleware/locale')
 
 // Middleware
 app.use(express.json());
 app.use(helmet())
 app.use(morgan("dev"))
 app.use(cors());
+
+
+app.use(locale);
 
 
 
@@ -25,7 +29,7 @@ const authRoutes = require('./api/routes/authRoutes')
 const productsRoutes = require('./api/routes/productRoutes')
 app.get('/',(req,res)=>{
     res.status(200).json({
-    message: "Welcome to e-commerce API",
+    message: req.t('welcome'),
     status: "success"
     })
 

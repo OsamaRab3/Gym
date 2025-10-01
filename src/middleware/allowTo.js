@@ -6,7 +6,7 @@ module.exports = (...roles) => {
       if (!req.user || !roles.includes(req.user.role)) {
         return next(
           new CustomError(
-            "Access denied. You do not have the required permissions.",
+            req.t('access_denied_permissions'),
             403
           )
         );

@@ -27,6 +27,7 @@ app.use(locale);
 
 const authRoutes = require('./api/routes/authRoutes')
 const productsRoutes = require('./api/routes/productRoutes')
+const couponRoutes = require('./api/routes/couponRoutes')
 app.get('/',(req,res)=>{
     res.status(200).json({
     message: req.t('welcome'),
@@ -37,9 +38,7 @@ app.get('/',(req,res)=>{
 
 app.use('/api/auth',authRoutes)
 app.use('/api/products', productsRoutes)
-
-
-
+app.use('/api/coupons', couponRoutes)
 
 
 

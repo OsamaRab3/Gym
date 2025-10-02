@@ -47,7 +47,7 @@ const createProduct = async ({ name, description, price, stock, discount, color,
 const deleteProduct = async (id) => {
     const existing = await prisma.product.findUnique({ where: { id: parseInt(id) } });
     if (!existing) {
-        throw new CustomError('Product not found', 404);
+        throw new CustomError('product_not_found', 404);
     }
     await prisma.product.delete({ where: { id: parseInt(id) } })
     return { id };
@@ -64,7 +64,7 @@ const getProductById = async (id) => {
         include: { category: true }
     })
     if (!product) {
-        throw new CustomError('Product not found', 404);
+        throw new CustomError('product_not_found', 404);
     }
     return product;
 }
@@ -72,7 +72,7 @@ const getProductById = async (id) => {
 const updateProduct = async (id, data) => {
     const existing = await prisma.product.findUnique({ where: { id: parseInt(id) } });
     if (!existing) {
-        throw new CustomError('Product not found', 404);
+        throw new CustomError('product_not_found', 404);
     }
     const updated = await prisma.product.update({
         where: { id: parseInt(id) },
@@ -84,7 +84,7 @@ const updateProduct = async (id, data) => {
 const updateProductRank = async (id, rank) => {
     const existing = await prisma.product.findUnique({ where: { id: parseInt(id) } });
     if (!existing) {
-        throw new CustomError('Product not found', 404);
+        throw new CustomError('product_not_found', 404);
     }
     const updated = await prisma.product.update({
         where: { id: parseInt(id) },

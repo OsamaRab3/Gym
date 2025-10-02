@@ -8,14 +8,15 @@ const productServices = require('../../services/productServices')
 const createProduct = asyncErrorHandler(async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return next(new CustomError(req.t('validation_error_with_detail', errors.array()[0].msg), 400))
+        const detailKey = errors.array()[0].msg;
+        return next(new CustomError(req.t('validation_error_with_detail', req.t(detailKey)), 400))
     }
 
     const { name, description, price, stock, discount, color, manufacturer,categoryName, imageUrl } = req.body;
 
-    if (!name || typeof price === 'undefined') {
-        return next(new CustomError(req.t('missing_required_fields_name_price'), 400));
-    }
+    // if (!name || typeof price === 'undefined') {
+    //     return next(new CustomError(req.t('missing_required_fields_name_price'), 400));
+    // }
 
     const product = await productServices.createProduct({
         name,
@@ -37,6 +38,11 @@ const createProduct = asyncErrorHandler(async (req, res, next) => {
 })
 
 const deleteProduct = asyncErrorHandler(async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        const detailKey = errors.array()[0].msg;
+        return next(new CustomError(req.t('validation_error_with_detail', req.t(detailKey)), 400))
+    }
     const id = req.params.id;
     const result = await productServices.deleteProduct(id)
     res.status(200).json({
@@ -56,6 +62,11 @@ const getAllProducts = asyncErrorHandler(async (req, res) => {
 })
 
 const getProductById = asyncErrorHandler(async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        const detailKey = errors.array()[0].msg;
+        return next(new CustomError(req.t('validation_error_with_detail', req.t(detailKey)), 400))
+    }
     const id = req.params.id;
     const product = await productServices.getProductById(id)
     res.status(200).json({
@@ -66,6 +77,11 @@ const getProductById = asyncErrorHandler(async (req, res, next) => {
 })
 
 const updateProduct = asyncErrorHandler(async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        const detailKey = errors.array()[0].msg;
+        return next(new CustomError(req.t('validation_error_with_detail', req.t(detailKey)), 400))
+    }
     const id = req.params.id;
     const data = req.body
     if (!data || Object.keys(data).length === 0) {
@@ -80,6 +96,11 @@ const updateProduct = asyncErrorHandler(async (req, res, next) => {
 })
 
 const updateProductRank = asyncErrorHandler(async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        const detailKey = errors.array()[0].msg;
+        return next(new CustomError(req.t('validation_error_with_detail', req.t(detailKey)), 400))
+    }
     const id = req.params.id;
     const { rank } = req.body
     if (typeof rank === 'undefined') {
@@ -101,4 +122,5 @@ module.exports = {
     updateProduct,
     updateProductRank,
 }
+
 

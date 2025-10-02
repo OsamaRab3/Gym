@@ -11,6 +11,17 @@ const translations = {
     product_updated: 'تم تحديث المنتج بنجاح',
     product_rank_updated: 'تم تحديث ترتيب المنتج بنجاح',
     product_not_found: 'المنتج غير موجود',
+    
+    // Category messages
+    category_created: 'تم إنشاء الفئة بنجاح',
+    category_retrieved:'تم جلب الفئة بنجاح ',
+    category_updated: 'تم تحديث الفئة بنجاح',
+    category_deleted: 'تم حذف الفئة بنجاح',
+    categories_retrieved: 'تم جلب الفئات بنجاح',
+    category_not_found: 'الفئة غير موجودة',
+    category_exists: 'هذه الفئة موجودة بالفعل',
+    category_name_taken: 'اسم الفئة مستخدم بالفعل',
+    category_has_products: 'لا يمكن حذف الفئة لأنها تحتوي على منتجات',
 
     
     coupon_created: 'تم إنشاء القسيمة بنجاح',
@@ -48,6 +59,8 @@ const translations = {
     id_is_required: 'المعرّف مطلوب',
     id_must_be_positive_integer: 'يجب أن يكون المعرف عددًا صحيحًا موجبًا',
     name_is_required: 'الاسم مطلوب',
+    name_length: 'يجب أن يكون الاسم بين 2 و 50 حرفًا',
+    invalid_id: 'معرّف غير صالح',
     name_must_be_string: 'يجب أن يكون الاسم نصًا',
     name_length_2_100: 'يجب أن يكون طول الاسم بين 2 و100 حرف',
     price_is_required: 'السعر مطلوب',
@@ -95,6 +108,17 @@ const translations = {
     product_updated: 'Product updated successfully',
     product_rank_updated: 'Product rank updated successfully',
     product_not_found: 'Product not found',
+    
+    // Category messages
+    category_created: 'Category created successfully',
+    category_updated: 'Category updated successfully',
+    category_deleted: 'Category deleted successfully',
+    categories_retrieved: 'Categories retrieved successfully',
+    category_retrieved: 'Categorie retrieved successfully',
+    category_not_found: 'Category not found',
+    category_exists: 'Category already exists',
+    category_name_taken: 'Category name is already taken',
+    category_has_products: 'Cannot delete category with existing products',
     // Coupon messages
     coupon_created: 'Coupon created successfully',
     coupon_deleted: 'Coupon deleted successfully',
@@ -151,6 +175,8 @@ const translations = {
     id_is_required: 'ID is required',
     id_must_be_positive_integer: 'ID must be a positive integer',
     name_is_required: 'Name is required',
+    name_length: 'Name must be between 2 and 50 characters',
+    invalid_id: 'Invalid ID',
     name_must_be_string: 'Name must be a string',
     name_length_2_100: 'Name length must be between 2 and 100 characters',
     price_is_required: 'Price is required',

@@ -38,11 +38,17 @@ app.get('/',(req,res)=>{
 
 app.use('/api/auth',authRoutes)
 app.use('/api/products', productsRoutes)
-app.use('/api/coupons', couponRoutes)
+app.use('/api/coupons', couponRoutes);
 
-
-
-
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    node_env: process.env.NODE_ENV || 'development'
+  });
+});
 
 // Handle 404 Not Found
 app.use(NotFound);

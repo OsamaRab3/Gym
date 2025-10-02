@@ -12,7 +12,7 @@ const translations = {
     product_rank_updated: 'تم تحديث ترتيب المنتج بنجاح',
     product_not_found: 'المنتج غير موجود',
 
-
+    
     coupon_created: 'تم إنشاء القسيمة بنجاح',
     coupon_deleted: 'تم حذف القسيمة بنجاح',
     coupons_retrieved: 'تم جلب القسائم بنجاح',
@@ -67,6 +67,22 @@ const translations = {
     rank_is_required: 'الترتيب مطلوب',
     rank_must_be_non_negative_integer: 'يجب أن يكون الترتيب عددًا صحيحًا غير سالب',
     stock_is_required: 'المخزون مطلوب',
+    
+    // Contact Us Messages
+    contact_message_sent: 'تم إرسال رسالتك بنجاح',
+    contact_message_failed: 'عذراً، حدث خطأ أثناء إرسال رسالتك',
+    contact_form_submission: 'نموذج الاتصال',
+    from: 'من',
+    subject: 'الموضوع',
+    message: 'الرسالة',
+    name_is_required: 'الاسم مطلوب',
+    name_must_be_string: 'يجب أن يكون الاسم نصاً',
+    name_length_2_100: 'يجب أن يكون طول الاسم بين 2 و100 حرف',
+    email_is_required: 'البريد الإلكتروني مطلوب',
+    email_must_be_valid: 'يجب أن يكون البريد الإلكتروني صالحاً',
+    message_is_required: 'الرسالة مطلوبة',
+    message_length_6_2000: 'يجب أن يكون طول الرسالة بين 6 و2000 حرف',
+    email_sent_from_contact_form: 'تم إرسال هذه الرسالة من نموذج الاتصال الخاص بموقعنا',
   },
   en: {
     welcome: 'Welcome to e-commerce API',
@@ -103,9 +119,29 @@ const translations = {
     no_token_provided: 'Access denied. No token provided.',
     invalid_token: 'Invalid token.',
     access_denied_permissions: 'Access denied. You do not have the required permissions.',
+    
+    // Contact Us Messages
+    contact_message_sent: 'Your message has been sent successfully',
+    contact_message_failed: 'Sorry, there was an error sending your message',
+    contact_form_submission: 'Contact Form Submission',
+    from: 'From',
+    subject: 'Subject',
+    message: 'Message',
+    name_is_required: 'Name is required',
+    name_must_be_string: 'Name must be a string',
+    name_length_2_100: 'Name must be between 2 and 100 characters',
+    email_is_required: 'Email is required',
+    email_must_be_valid: 'Please enter a valid email',
+    message_is_required: 'Message is required',
+    message_length_6_2000: 'Message must be between 6 and 2000 characters',
+    email_sent_from_contact_form: 'This email was sent from our contact form',
+    email_send_failed: 'Failed to send email',
+    
+    // Contact Us messages
+    contact_message_sent: 'Your message has been sent successfully',
+    contact_message_failed: 'Sorry, there was an error sending your message',
 
     // Validation messages (auth)
-    email_is_required: 'Email is required',
     email_must_be_valid: 'Email must be valid',
     password_is_required: 'Password is required',
     password_must_be_string: 'Password must be a string',

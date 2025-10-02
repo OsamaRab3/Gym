@@ -11,10 +11,10 @@ module.exports = {
   
         error.statusCode = error.statusCode || 500;
         error.status = error.status || "error"
-      
+        const localizedMessage = t(req.lang, error.message, error.params)
         res.status(error.statusCode).json({
-          status:error.status,
-          message:error.message
+          status: error.status,
+          message: localizedMessage
         })
     },
     

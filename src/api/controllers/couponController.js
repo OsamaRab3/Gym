@@ -8,11 +8,22 @@ const couponServices = require('../../services/couponServices')
 const createCoupon = asyncErrorHandler(async (req, res, next) => {
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
-    return next(new CustomError(req.t('validation_error_with_detail', errors.array()[0].msg), 400))
+    const detailKey = errors.array()[0].msg;
+    return next(new CustomError(req.t('validation_error_with_detail', req.t(detailKey)), 400))
   }
 
-  const { code, discount, type, validFrom, validTo, isActive, productId } = req.body
-  const coupon = await couponServices.createCoupon({ code, discount, type, validFrom, validTo, isActive, productId })
+  const productId = req.params.productId;
+  const { code, discount, type = 'PERCENT', validFrom, validTo, isActive = true } = req.body
+
+  const coupon = await couponServices.createCoupon({
+    code,
+    discount,
+    type,
+    validFrom,
+    validTo,
+    isActive,
+    productId
+  })
 
   res.status(201).json({
     message: req.t('coupon_created'),
@@ -22,8 +33,15 @@ const createCoupon = asyncErrorHandler(async (req, res, next) => {
 })
 
 const deleteCoupon = asyncErrorHandler(async (req, res, next) => {
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    const detailKey = errors.array()[0].msg;
+    return next(new CustomError(req.t('validation_error_with_detail', req.t(detailKey)), 400))
+  }
+
   const id = req.params.id
   const result = await couponServices.deleteCoupon(id)
+
   res.status(200).json({
     message: req.t('coupon_deleted'),
     status: status.SUCCESS,
@@ -31,18 +49,35 @@ const deleteCoupon = asyncErrorHandler(async (req, res, next) => {
   })
 })
 
-const getAllCoupons = asyncErrorHandler(async (req, res) => {
-  const coupons = await couponServices.getAllCoupons()
+const getAllCoupons = asyncErrorHandler(async (req, res, next) => {
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    const detailKey = errors.array()[0].msg;
+    return next(new CustomError(req.t('validation_error_with_detail', req.t(detailKey)), 400))
+  }
+
+  const coupons =  await couponServices.getAllCoupons();
+
   res.status(200).json({
     message: req.t('coupons_retrieved'),
     status: status.SUCCESS,
-    data: coupons,
+    data: {
+      coupons
+
+    }
   })
 })
 
 const getCouponById = asyncErrorHandler(async (req, res, next) => {
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    const detailKey = errors.array()[0].msg;
+    return next(new CustomError(req.t('validation_error_with_detail', req.t(detailKey)), 400))
+  }
+
   const id = req.params.id
   const coupon = await couponServices.getCouponById(id)
+
   res.status(200).json({
     message: req.t('coupon_retrieved'),
     status: status.SUCCESS,

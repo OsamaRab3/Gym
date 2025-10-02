@@ -1,11 +1,11 @@
 const express = require('express');
-const helmet  = require('helmet');
+const helmet = require('helmet');
 const morgan = require('morgan');
 const cors = require('cors');
 
 const app = express();
-const { NotFound , globalError } = require('./middleware/errorHandler')
-const locale = require('./middleware/locale')
+const { NotFound, globalError } = require('./middleware/errorHandler');
+const locale = require('./middleware/locale');
 
 // Middleware
 app.use(express.json());
@@ -51,9 +51,4 @@ app.use(NotFound);
 app.use(globalError);
 
 
-
-
-
 module.exports = app;
-
-

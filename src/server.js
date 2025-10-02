@@ -1,16 +1,14 @@
+const app = require('./app');
+const http = require('http');
+const config = require('./config/environment');
 
-// ____________________________________________________________________________________________________________
-// ______________________________________Osama Rabea Dakrory__________________________________________________
-// ____________________________________________________________________________________________________________
+const server = http.createServer(app);
 
-const app = require('./app')
-const http = require('http')
-const config = require('./config/environment')
-const server = http.createServer(app)
+module.exports = app;
 
-
-
-
-server.listen(config.PORT,()=>{
-    console.log(`Server running on http://localhost:${config.PORT}`);
-});
+if (require.main === module) {
+  const PORT = process.env.PORT || config.PORT || 3000;
+  server.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}

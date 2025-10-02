@@ -9,7 +9,6 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "build": "npm install && prisma generate",
     "vercel-build": "npm install && prisma generate && prisma migrate deploy",
     "vercel-dev": "npm install && prisma generate && node server.js"
   },

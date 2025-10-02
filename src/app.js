@@ -28,6 +28,7 @@ app.use(locale);
 const authRoutes = require('./api/routes/authRoutes')
 const productsRoutes = require('./api/routes/productRoutes')
 const couponRoutes = require('./api/routes/couponRoutes')
+const contact = require('./api/routes/contactusRoutes')
 app.get('/',(req,res)=>{
     res.status(200).json({
     message: req.t('welcome'),
@@ -36,19 +37,11 @@ app.get('/',(req,res)=>{
 
 })
 
-app.use('/api/auth',authRoutes)
-app.use('/api/products', productsRoutes)
+app.use('/api/auth',authRoutes);
+app.use('/api/products', productsRoutes);
 app.use('/api/coupons', couponRoutes);
+app.use('/api/contact',contact);
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    message: 'Server is running',
-    timestamp: new Date().toISOString(),
-    node_env: process.env.NODE_ENV || 'development'
-  });
-});
 
 // Handle 404 Not Found
 app.use(NotFound);

@@ -6,6 +6,8 @@ module.exports = {
     DB_URL: process.env.MYSQL_URL || 'Your DB_URL',
     JWT_SECRET: process.env.JWT_SECRET || 'your_secret_key',
     expiresIn: process.env.expiresIn,
+    GMAIL_Admin: process.env.GMAIL_Admin,
+    PASS_EMAIL: process.env.PASS_EMAIL,
 
     // insert here all .env variables 
 }

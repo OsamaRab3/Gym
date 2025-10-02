@@ -8,7 +8,7 @@ const generateJWT = require('../utils/jwt')
 const login = async (email, password) => {
 
 
-// const hashedPassword = await bcrypt.hash("1234", 10); 
+// const hashedPassword = await bcrypt.hash("123456", 10); 
 // await prisma.user.create({
 //   data: {
 //     name: "osama",
@@ -24,12 +24,12 @@ const login = async (email, password) => {
     });
 
     if (!user) {
-        throw new CustomError("Email or password is not correct", 401);
+        throw new CustomError('invalid_email_or_password', 401);
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-        throw new CustomError("Email or password is not correct", 401);
+        throw new CustomError('invalid_email_or_password', 401);
     }
 
     const { password: p, createdAt: ca, ...safeUser } = user;

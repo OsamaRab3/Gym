@@ -14,10 +14,6 @@ const createProduct = asyncErrorHandler(async (req, res, next) => {
 
     const { name, description, price, stock, discount, color, manufacturer,categoryName, imageUrl } = req.body;
 
-    // if (!name || typeof price === 'undefined') {
-    //     return next(new CustomError(req.t('missing_required_fields_name_price'), 400));
-    // }
-
     const product = await productServices.createProduct({
         name,
         description,

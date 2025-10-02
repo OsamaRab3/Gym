@@ -44,6 +44,8 @@ model Product {
   orderItems    OrderItem[]
   deliveryFees  DeliveryFee[]
   createdAt     DateTime        @default(now())
+
+  Coupon Coupon[]    
 }
 
 model Order {
@@ -79,4 +81,18 @@ model DeliveryFee {
   province   Province  @relation(fields: [provinceId], references: [id])
   provinceId Int
   fee        Float
+}
+
+model Coupon {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique       
+  discount    Float                  
+  type        String    @default("PERCENT") // "PERCENT" or "FIXED"
+  validFrom   DateTime?             
+  validTo     DateTime?             
+  isActive    Boolean   @default(true)
+
+  product     Product   @relation(fields: [productId], references: [id])
+  productId   Int      
+  createdAt   DateTime  @default(now())
 }

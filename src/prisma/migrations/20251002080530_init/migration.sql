@@ -79,6 +79,22 @@ CREATE TABLE `DeliveryFee` (
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- CreateTable
+CREATE TABLE `Coupon` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `code` VARCHAR(191) NOT NULL,
+    `discount` DOUBLE NOT NULL,
+    `type` VARCHAR(191) NOT NULL DEFAULT 'PERCENT',
+    `validFrom` DATETIME(3) NULL,
+    `validTo` DATETIME(3) NULL,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
+    `productId` INTEGER NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    UNIQUE INDEX `Coupon_code_key`(`code`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- AddForeignKey
 ALTER TABLE `Product` ADD CONSTRAINT `Product_categoryId_fkey` FOREIGN KEY (`categoryId`) REFERENCES `Category`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -96,3 +112,6 @@ ALTER TABLE `DeliveryFee` ADD CONSTRAINT `DeliveryFee_productId_fkey` FOREIGN KE
 
 -- AddForeignKey
 ALTER TABLE `DeliveryFee` ADD CONSTRAINT `DeliveryFee_provinceId_fkey` FOREIGN KEY (`provinceId`) REFERENCES `Province`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Coupon` ADD CONSTRAINT `Coupon_productId_fkey` FOREIGN KEY (`productId`) REFERENCES `Product`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -25,10 +25,11 @@ app.use(locale);
 // app.use(upload.none());
 // // Routes
 
-const authRoutes = require('./api/routes/authRoutes')
-const productsRoutes = require('./api/routes/productRoutes')
-const couponRoutes = require('./api/routes/couponRoutes')
-const contact = require('./api/routes/contactusRoutes')
+const authRoutes = require('./api/routes/authRoutes');
+const productsRoutes = require('./api/routes/productRoutes');
+const couponRoutes = require('./api/routes/couponRoutes');
+const contact = require('./api/routes/contactusRoutes');
+const categoryRoutes = require('./api/routes/categoryRoutes');
 app.get('/',(req,res)=>{
     res.status(200).json({
     message: req.t('welcome'),
@@ -37,10 +38,11 @@ app.get('/',(req,res)=>{
 
 })
 
-app.use('/api/auth',authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/products', productsRoutes);
 app.use('/api/coupons', couponRoutes);
-app.use('/api/contact',contact);
+app.use('/api/contact', contact);
+app.use('/api/categories', categoryRoutes);
 
 
 // Handle 404 Not Found

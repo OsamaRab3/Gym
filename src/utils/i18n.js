@@ -96,6 +96,47 @@ const translations = {
     message_is_required: 'الرسالة مطلوبة',
     message_length_6_2000: 'يجب أن يكون طول الرسالة بين 6 و2000 حرف',
     email_sent_from_contact_form: 'تم إرسال هذه الرسالة من نموذج الاتصال الخاص بموقعنا',
+
+    // Order Messages
+    order_created: 'تم إنشاء الطلب بنجاح',
+    orders_retrieved: 'تم جلب الطلبات بنجاح',
+    order_retrieved: 'تم جلب الطلب بنجاح',
+    order_updated: 'تم تحديث الطلب بنجاح',
+    order_not_found: 'الطلب غير موجود',
+    order_status_updated: 'تم تحديث حالة الطلب بنجاح',
+    invalid_order_status: 'حالة الطلب غير صالحة',
+    
+    // Province Messages
+    province_created: 'تم إنشاء المحافظة بنجاح',
+    province_updated: 'تم تحديث المحافظة بنجاح',
+    province_deleted: 'تم حذف المحافظة بنجاح',
+    province_retrieved: 'تم جلب بيانات المحافظة بنجاح',
+    provinces_retrieved: 'تم جلب المحافظات بنجاح',
+    province_not_found: 'المحافظة غير موجودة',
+    cannot_delete_province_with_orders: 'لا يمكن حذف محافظة تحتوي على طلبات',
+    'province_already_exist': 'هذه المحافظة موجودة بالفعل',
+    
+    // Delivery Fee Messages
+    delivery_fee_updated: 'تم تحديث رسوم التوصيل بنجاح',
+    delivery_fee_removed: 'تم إزالة رسوم التوصيل بنجاح',
+    delivery_fee_not_found: 'رسوم التوصيل غير موجودة',
+    invalid_fee_amount: 'يجب أن تكون قيمة الرسوم رقماً موجباً',
+    
+    // Order Validation Messages
+    province_id_must_be_integer: 'يجب أن يكون معرف المحافظة رقم صحيح',
+    first_name_required: 'الاسم الأول مطلوب',
+    first_name_length: 'يجب أن يكون طول الاسم الأول بين 2 و50 حرفاً',
+    last_name_required: 'اسم العائلة مطلوب',
+    last_name_length: 'يجب أن يكون طول اسم العائلة بين 2 و50 حرفاً',
+    city_required: 'المدينة مطلوبة',
+    city_length: 'يجب أن يكون طول اسم المدينة بين 2 و100 حرف',
+    address_required: 'العنوان مطلوب',
+    address_length: 'يجب أن يكون طول العنوان بين 5 و255 حرفاً',
+    phone_required: 'رقم الهاتف مطلوب',
+    invalid_phone_format: 'صيغة رقم الهاتف غير صالحة',
+    at_least_one_item_required: 'يجب إضافة منتج واحد على الأقل',
+    invalid_items_format: 'تنسيق العناصر غير صالح',
+    invalid_order_id: 'معرف الطلب غير صالح',
   },
   en: {
     welcome: 'Welcome to e-commerce API',
@@ -155,7 +196,7 @@ const translations = {
     name_must_be_string: 'Name must be a string',
     name_length_2_100: 'Name must be between 2 and 100 characters',
     email_is_required: 'Email is required',
-    email_must_be_valid: 'Please enter a valid email',
+    email_must_be_valid: 'Email must be a valid email address',
     message_is_required: 'Message is required',
     message_length_6_2000: 'Message must be between 6 and 2000 characters',
     email_sent_from_contact_form: 'This email was sent from our contact form',
@@ -164,6 +205,22 @@ const translations = {
     // Contact Us messages
     contact_message_sent: 'Your message has been sent successfully',
     contact_message_failed: 'Sorry, there was an error sending your message',
+
+    // Province Messages
+    province_created: 'Province created successfully',
+    province_updated: 'Province updated successfully',
+    province_deleted: 'Province deleted successfully',
+    province_retrieved: 'Province retrieved successfully',
+    provinces_retrieved: 'Provinces retrieved successfully',
+    province_not_found: 'Province not found',
+    cannot_delete_province_with_orders: 'Cannot delete province with existing orders',
+    'province_already_exist': 'This province already exists',
+    
+    // Delivery Fee Messages
+    delivery_fee_updated: 'Delivery fee updated successfully',
+    delivery_fee_removed: 'Delivery fee removed successfully',
+    delivery_fee_not_found: 'Delivery fee not found',
+    invalid_fee_amount: 'Fee must be a positive number',
 
     // Validation messages (auth)
     email_must_be_valid: 'Email must be valid',

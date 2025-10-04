@@ -30,6 +30,8 @@ const productsRoutes = require('./api/routes/productRoutes');
 const couponRoutes = require('./api/routes/couponRoutes');
 const contact = require('./api/routes/contactusRoutes');
 const categoryRoutes = require('./api/routes/categoryRoutes');
+const orderRoutes = require('./api/routes/orderRoutes')
+const provinceRoutes = require('./api/routes/provinceRoutes')
 app.get('/',(req,res)=>{
     res.status(200).json({
     message: req.t('welcome'),
@@ -43,6 +45,8 @@ app.use('/api/products', productsRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/contact', contact);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/orders',orderRoutes)
+app.use('/api/provinces',provinceRoutes)
 
 
 // Handle 404 Not Found

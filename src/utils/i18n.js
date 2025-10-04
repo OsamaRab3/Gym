@@ -114,6 +114,7 @@ const translations = {
     provinces_retrieved: 'تم جلب المحافظات بنجاح',
     province_not_found: 'المحافظة غير موجودة',
     cannot_delete_province_with_orders: 'لا يمكن حذف محافظة تحتوي على طلبات',
+    'province_already_exist': 'هذه المحافظة موجودة بالفعل',
     
     // Delivery Fee Messages
     delivery_fee_updated: 'تم تحديث رسوم التوصيل بنجاح',
@@ -204,6 +205,22 @@ const translations = {
     // Contact Us messages
     contact_message_sent: 'Your message has been sent successfully',
     contact_message_failed: 'Sorry, there was an error sending your message',
+
+    // Province Messages
+    province_created: 'Province created successfully',
+    province_updated: 'Province updated successfully',
+    province_deleted: 'Province deleted successfully',
+    province_retrieved: 'Province retrieved successfully',
+    provinces_retrieved: 'Provinces retrieved successfully',
+    province_not_found: 'Province not found',
+    cannot_delete_province_with_orders: 'Cannot delete province with existing orders',
+    'province_already_exist': 'This province already exists',
+    
+    // Delivery Fee Messages
+    delivery_fee_updated: 'Delivery fee updated successfully',
+    delivery_fee_removed: 'Delivery fee removed successfully',
+    delivery_fee_not_found: 'Delivery fee not found',
+    invalid_fee_amount: 'Fee must be a positive number',
 
     // Validation messages (auth)
     email_must_be_valid: 'Email must be valid',

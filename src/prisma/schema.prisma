@@ -88,6 +88,8 @@ model DeliveryFee {
   province   Province  @relation(fields: [provinceId], references: [id])
   provinceId Int
   fee        Float
+
+  @@unique([provinceId, productId])
 }
 
 model Coupon {

@@ -49,6 +49,15 @@ class ProvinceService {
   }
 
   async createProvince(name) {
+    const existing = await prisma.province.findUnique({
+      where: {
+        name
+      }
+    })
+    if (existing) {
+      throw new CustomError('province_already_exist',409)
+    }
+
     return await prisma.province.create({
       data: {
         name
@@ -57,36 +66,37 @@ class ProvinceService {
   }
 
   async updateProvince(id, name) {
-    try {
-      return await prisma.province.update({
-        where: { id: parseInt(id) },
-        data: { name }
-      });
-    } catch (error) {
-      if (error.code === 'P2025') {
-        throw new CustomError('province_not_found', 404);
+    const existing = await prisma.province.findUnique({
+      where: {
+        id: parseInt(id)
       }
-      throw error;
+    })
+    if (!existing) {
+      throw new CustomError("province_not_found", 404)
     }
+    return await prisma.province.update({
+      where: { id: parseInt(id) },
+      data: { name }
+    });
+
   }
 
   async deleteProvince(id) {
-    try {
-      return await prisma.province.delete({
-        where: { id: parseInt(id) }
-      });
-    } catch (error) {
-      if (error.code === 'P2025') {
-        throw new CustomError('province_not_found', 404);
-      } else if (error.code === 'P2003') {
-        throw new CustomError('cannot_delete_province_with_orders', 400);
+    const existing = await prisma.province.findUnique({
+      where: {
+        id: parseInt(id)
       }
-      throw error;
+    })
+    if (!existing) {
+      throw new CustomError("province_not_found", 404)
     }
+    return await prisma.province.delete({
+      where: { id: parseInt(id) }
+    });
+
   }
 
   async addOrUpdateDeliveryFee(provinceId, productId, fee) {
-    // Check if both province and product exist
     const [province, product] = await Promise.all([
       prisma.province.findUnique({ where: { id: parseInt(provinceId) } }),
       prisma.product.findUnique({ where: { id: parseInt(productId) } })
@@ -116,21 +126,28 @@ class ProvinceService {
   }
 
   async removeDeliveryFee(provinceId, productId) {
-    try {
-      return await prisma.deliveryFee.delete({
-        where: {
-          provinceId_productId: {
-            provinceId: parseInt(provinceId),
-            productId: parseInt(productId)
-          }
-        }
-      });
-    } catch (error) {
-      if (error.code === 'P2025') {
-        throw new CustomError('delivery_fee_not_found', 404);
-      }
-      throw error;
+
+
+    const [province, product] = await Promise.all([
+      prisma.province.findUnique({ where: { id: parseInt(provinceId) } }),
+      prisma.product.findUnique({ where: { id: parseInt(productId) } })
+    ]);
+
+    if (!province) {
+      throw new CustomError('province_not_found', 404);
     }
+    if (!product) {
+      throw new CustomError('product_not_found', 404);
+    }
+
+    return await prisma.deliveryFee.delete({
+      where: {
+        provinceId_productId: {
+          provinceId: parseInt(provinceId),
+          productId: parseInt(productId)
+        }
+      }
+    });
   }
 }
 

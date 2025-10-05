@@ -18,13 +18,6 @@ app.use(locale);
 
 
 
-
-// const multer = require("multer");
-// const upload = multer(); 
-
-// app.use(upload.none());
-// // Routes
-
 const authRoutes = require('./api/routes/authRoutes');
 const productsRoutes = require('./api/routes/productRoutes');
 const couponRoutes = require('./api/routes/couponRoutes');

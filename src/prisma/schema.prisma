@@ -13,95 +13,212 @@ enum Role {
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
+  id        String   @id @default(uuid()) @db.Char(36)
   name      String
-  email     String    @unique
+  email     String   @unique
   password  String
-  role      Role      @default(USER) 
+  role      Role     @default(USER)
   // orders    Order[]
-  createdAt DateTime  @default(now())
+  createdAt DateTime @default(now())
+}
+
+enum Language {
+  EN @map("en") // English
+  AR @map("ar") // Arabic
 }
 
 model Category {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique
-  products  Product[]
+  id           String                @id @default(uuid()) @db.Char(36)
+  name         String                @unique
+  imageUrl     String?
+  translations CategoryTranslation[]
+  products     Product[]
+  createdAt    DateTime              @default(now())
+}
+
+model CategoryTranslation {
+  id          String   @id @default(uuid()) @db.Char(36)
+  name        String
+  description String?
+  language    Language
+  category    Category @relation(fields: [categoryId], references: [id])
+  categoryId  String   @db.Char(36)
+
+  @@unique([categoryId, language])
 }
 
 model Product {
-  id            Int            @id @default(autoincrement())
-  name          String
-  description   String?
-  price         Float
-  discount      Float?
-  stock         Int             @default(0)
-  color         String?         
-  manufacturer  String?        
-  imageUrl      String?        
-  rank          Int?           
-  category      Category?       @relation(fields: [categoryId], references: [id])
-  categoryId    Int?           
-  orderItems    OrderItem[]
-  deliveryFees  DeliveryFee[]
-  createdAt     DateTime        @default(now())
+  id           String               @id @default(uuid()) @db.Char(36)
+  price        Float
+  discount     Float?
+  stock        Int                  @default(0)
+  weight       Float                @default(0.0) // in kg
+  images       ProductImage[]       // Multiple images per product
+  rank         Int?
+  category     Category?            @relation(fields: [categoryId], references: [id])
+  categoryId   String?              @db.Char(36)
+  orderItems   OrderItem[]
+  translations ProductTranslation[]
+  offers       Ad[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  Coupon       Coupon[]
 
-  Coupon Coupon[]    
+  DiscountedProduct DiscountedProduct[]
+}
+
+model ProductImage {
+  id        String   @id @default(uuid()) @db.Char(36)
+  url       String
+  isPrimary Boolean  @default(false)
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String   @db.Char(36)
+  createdAt DateTime @default(now())
+  
+  @@index([productId])
+}
+
+model ProductTranslation {
+  id           String   @id @default(uuid()) @db.Char(36)
+  name         String
+  description  String?
+  color        String?
+  manufacturer String?
+  language     Language
+  product      Product  @relation(fields: [productId], references: [id])
+  productId    String   @db.Char(36)
+
+  @@unique([productId, language])
 }
 
 model Order {
-  id               Int         @id @default(autoincrement())
-  orderItems       OrderItem[]
-  totalPrice       Float
-  status           String      @default("pending") // pending, processing, shipped, delivered, cancelled
-  province         Province    @relation(fields: [provinceId], references: [id])
-  provinceId       Int
-  city             String
-  address          String
-  phoneNumber      String
+  id                String      @id @default(uuid()) @db.Char(36)
+  orderItems        OrderItem[]
+  totalPrice        Float
+  status            String      @default("pending") // pending, processing, shipped, delivered, cancelled
+  province          Province    @relation(fields: [provinceId], references: [id])
+  provinceId        String      @db.Char(36)
+  city              String
+  address           String
+  phoneNumber       String
   secondPhoneNumber String?
-  userFirstName    String
-  userLastName     String
-  createdAt        DateTime    @default(now())
+  userFirstName     String
+  userLastName      String
+  createdAt         DateTime    @default(now())
 }
 
 model OrderItem {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(uuid()) @db.Char(36)
   order     Order    @relation(fields: [orderId], references: [id])
-  orderId   Int
+  orderId   String   @db.Char(36)
   product   Product  @relation(fields: [productId], references: [id])
-  productId Int
+  productId String   @db.Char(36)
   quantity  Int      @default(1)
-  price     Float   
+  price     Float
+  createdAt DateTime @default(now())
 }
 
 model Province {
-  id           Int           @id @default(autoincrement())
-  name         String        @unique
+  id           String                @id @default(uuid()) @db.Char(36)
+  code         String                @unique
+  translations ProvinceTranslation[]
   deliveryFees DeliveryFee[]
   orders       Order[]
+  offers       Ad[]
+  createdAt    DateTime              @default(now())
+}
+
+model ProvinceTranslation {
+  id         String   @id @default(uuid()) @db.Char(36)
+  name       String
+  language   Language
+  province   Province @relation(fields: [provinceId], references: [id])
+  provinceId String   @db.Char(36)
+
+  @@unique([provinceId, language])
 }
 
 model DeliveryFee {
-  id         Int       @id @default(autoincrement())
-  product    Product   @relation(fields: [productId], references: [id])
-  productId  Int
-  province   Province  @relation(fields: [provinceId], references: [id])
-  provinceId Int
-  fee        Float
+  id         String  @id @default(uuid()) @db.Char(36)
+  minWeight  Float    @default(1.0) // in kg
+  maxWeight  Float? 
+  baseFee    Float   @default(70.0)
+  additionalFeePerKg Float @default(7.0)
+  feePerKg   Float
+  province   Province @relation(fields: [provinceId], references: [id])
+  provinceId String   @db.Char(36)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
 
-  @@unique([provinceId, productId])
+  @@unique([provinceId, minWeight, maxWeight])
+}
+
+model Ad {
+  id            String    @id @default(uuid()) @db.Char(36)
+  title         String
+  description   String?
+  isActive      Boolean   @default(false)
+  isFeatured    Boolean   @default(false)
+  discountType  String?   @default("PERCENT") // "PERCENT" or "FIXED"
+  discountValue Float? // percentage or fixed amount
+  startDate     DateTime  @default(now())
+  endDate       DateTime?
+
+  product    Product?  @relation(fields: [productId], references: [id])
+  productId  String?   @db.Char(36)
+  province   Province? @relation(fields: [provinceId], references: [id])
+  provinceId String?   @db.Char(36)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  // Indexes
+  @@index([isActive])
+  @@index([startDate, endDate])
+
 }
 
 model Coupon {
-  id          Int       @id @default(autoincrement())
-  code        String    @unique       
-  discount    Float                  
-  type        String    @default("PERCENT") // "PERCENT" or "FIXED"
-  validFrom   DateTime?             
-  validTo     DateTime?             
-  isActive    Boolean   @default(true)
+  id             String    @id @default(uuid()) @db.Char(36)
+  code           String    @unique
+  discount       Float
+  type           String    @default("PERCENT") // "PERCENT" or "FIXED"
+  validFrom      DateTime?
+  validTo        DateTime?
+  isActive       Boolean   @default(false)
+  maxUses        Int?      @default(1)
+  usedCount      Int       @default(0)  
+  createdAt      DateTime  @default(now())
+  usages        CouponUsage[]
+  Product       Product[]
 
-  product     Product   @relation(fields: [productId], references: [id])
-  productId   Int      
-  createdAt   DateTime  @default(now())
+  DiscountedProduct DiscountedProduct[]
+}
+
+model DiscountedProduct {
+  id            String   @id @default(uuid()) @db.Char(36)
+  productId     String   @db.Char(36)
+  product    Product?  @relation(fields: [productId], references: [id])
+
+  originalPrice Float
+  discountPrice Float
+  coupon        Coupon   @relation(fields: [couponId], references: [id])
+  couponId      String   @db.Char(36)
+  deviceId      String   @db.VarChar(255)
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+
+  @@unique([productId, couponId, deviceId])
+  CouponUsage CouponUsage[]
+}
+
+model CouponUsage {
+  id        String   @id @default(uuid()) @db.Char(36)
+  coupon    Coupon   @relation(fields: [couponId], references: [id])
+  couponId  String   @db.Char(36)
+  deviceId  String   @db.VarChar(255)
+  usedAt    DateTime @default(now())
+  expiresAt DateTime @default(now())
+  discountedProducts DiscountedProduct[]
+
+  @@unique([couponId, deviceId])
 }

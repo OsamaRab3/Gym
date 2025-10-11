@@ -12,8 +12,7 @@ const createCoupon = asyncErrorHandler(async (req, res, next) => {
     return next(new CustomError(req.t('validation_error_with_detail', req.t(detailKey)), 400))
   }
 
-  const productId = req.params.productId;
-  const { code, discount, type = 'PERCENT', validFrom, validTo, isActive = true } = req.body
+  const { code, discount, type = 'PERCENT', validFrom, validTo, isActive = false } = req.body
 
   const coupon = await couponServices.createCoupon({
     code,
@@ -22,9 +21,8 @@ const createCoupon = asyncErrorHandler(async (req, res, next) => {
     validFrom,
     validTo,
     isActive,
-    productId
   })
-
+  
   res.status(201).json({
     message: req.t('coupon_created'),
     status: status.SUCCESS,
@@ -49,6 +47,27 @@ const deleteCoupon = asyncErrorHandler(async (req, res, next) => {
   })
 })
 
+const useCoupon = asyncErrorHandler(async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const detailKey = errors.array()[0].msg;
+    return next(new CustomError(req.t('validation_error_with_detail', req.t(detailKey)), 400));
+  }
+
+  const { code } = req.body;
+  const deviceId = req.ip; 
+  const lang = req.query.lang || "AR";
+  
+
+  const result = await couponServices.useCoupon(lang,code, deviceId);
+
+  res.status(200).json({
+    message: req.t('coupon_applied_successfully'),
+    status: status.SUCCESS,
+    data: result,
+  });
+});
+
 const getAllCoupons = asyncErrorHandler(async (req, res, next) => {
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
@@ -56,7 +75,7 @@ const getAllCoupons = asyncErrorHandler(async (req, res, next) => {
     return next(new CustomError(req.t('validation_error_with_detail', req.t(detailKey)), 400))
   }
 
-  const coupons =  await couponServices.getAllCoupons();
+  const coupons = await couponServices.getAllCoupons();
 
   res.status(200).json({
     message: req.t('coupons_retrieved'),
@@ -67,6 +86,19 @@ const getAllCoupons = asyncErrorHandler(async (req, res, next) => {
     }
   })
 })
+
+const getDiscountedProducts = asyncErrorHandler(async (req, res, next) => {
+  const deviceId = req.ip; 
+  const lang = req.query.lang || "AR";
+
+  const products = await couponServices.getDiscountedProducts(lang,deviceId);
+
+  res.status(200).json({
+    message: products.length > 0 ? req.t('discounted_products_retrieved') : req.t('no_active_discounts'),
+    status: status.SUCCESS,
+    data: products,
+  });
+});
 
 const getCouponById = asyncErrorHandler(async (req, res, next) => {
   const errors = validationResult(req)
@@ -84,13 +116,11 @@ const getCouponById = asyncErrorHandler(async (req, res, next) => {
     data: coupon,
   })
 })
-
-
 module.exports = {
   createCoupon,
   deleteCoupon,
+  useCoupon,
   getAllCoupons,
   getCouponById,
-
-}
-
+  getDiscountedProducts
+};

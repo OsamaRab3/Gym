@@ -1,97 +1,312 @@
-// creat product => admin 
-// delete product => admin 
-// get all product 
-// get single product 
-// update product 
-// update product rank 
-
-
 const prisma = require('../prisma/prisma')
-const CustomError = require('../errors/CustomError')
+const CustomError = require('../errors/CustomError');
 
+const normalizeLanguage = (lang) => {
+    if (!lang) return 'AR';
+    const upper = String(lang).toUpperCase();
+    return upper === 'EN' ? 'EN' : 'AR';
+};
 
-const createProduct = async ({ name, description, price, stock, discount, color, manufacturer, categoryName, imageUrl }) => {
-    //   if (!categoryName) {
-    //     throw new CustomError("Category name is required", 400);
-    //   }
+const createProduct = async ({ name, description, color, price, stock, discount, weight, manufacturer, categoryName, rank, lang, images = [] }) => {
 
-    //   if (isNaN(price) || price <= 0) {
-    //     throw new CustomError("Price must be a valid number", 400);
-    //   }
+    const imageData = Array.isArray(images) ? images : [];
 
     const product = await prisma.product.create({
         data: {
-            name,
-            description,
             price: parseFloat(price),
-            stock: parseInt(stock),
-            discount: parseFloat(discount),
-            color,
-            manufacturer,
+            stock: parseInt(stock, 10) || 0,
+            discount: discount != null ? parseFloat(discount) : 0,
+            weight: weight != null ? parseFloat(weight) : 0,
+            rank: rank != null ? parseInt(rank, 10) : null,
+            translations: {
+                create: {
+                    name, description, color, manufacturer, language: normalizeLanguage(lang)
+                }
+
+            },
             category: {
                 connectOrCreate: {
                     where: { name: categoryName },
                     create: { name: categoryName }
                 }
             },
-            imageUrl
+            images: {
+                create: imageData.map((img, index) => ({
+                    url: img.url || img.path,
+                    isPrimary: index === 0
+                }))
+            }
         },
         include: {
+            translations: true,
+            images: true,
             category: true
         }
     });
 
     return product;
-}
+};
+
 
 const deleteProduct = async (id) => {
-    const existing = await prisma.product.findUnique({ where: { id: parseInt(id) } });
+    const existing = await prisma.product.findUnique({
+        where: { id },
+        include: {
+            images: true,
+            translations: true,
+            Coupon: true
+        }
+    });
+
     if (!existing) {
-        throw new CustomError('product_not_found', 404);
+        throw new CustomError('Product not found', 404);
     }
-    await prisma.product.delete({ where: { id: parseInt(id) } })
+
+    await prisma.$transaction([
+        prisma.discountedProduct.deleteMany({
+            where: { productId: id }
+        }),
+        prisma.orderItem.deleteMany({
+            where: { productId: id }
+        }),
+        prisma.productImage.deleteMany({
+            where: { productId: id }
+        }),
+        prisma.productTranslation.deleteMany({
+            where: { productId: id }
+        }),
+        prisma.product.delete({
+            where: { id }
+        })
+    ]);
+
     return { id };
-}
+};
 
-const getAllProducts = async () => {
-    const products = await prisma.product.findMany({ orderBy: { createdAt: 'desc' } })
-    return products;
-}
 
-const getProductById = async (id) => {
+const getAllProducts = async (lang = 'AR') => {
+    const products = await prisma.product.findMany({
+        include: {
+            translations: {
+                where: {
+                    language: normalizeLanguage(lang)
+                }
+            },
+            images: {
+                where: {
+                    isPrimary: true
+                }
+            },
+            category: true
+        },
+        orderBy: {
+            createdAt: 'desc'
+        }
+    });
+
+    return products.filter(product => product.translations.length > 0);
+
+};
+
+
+const getProductById = async (id, lang = 'AR') => {
     const product = await prisma.product.findUnique({
-        where: { id: parseInt(id) },
-        include: { category: true }
-    })
+        where: { id },
+        include: {
+            translations: {
+                where: {
+                    productId: id,
+                },
+                select: {
+                    name: true,
+                    description: true,
+                    color: true,
+                    manufacturer: true
+
+                }
+            },
+            images: true,
+            category: {
+                include: {
+                    translations: {
+                        where: { language: normalizeLanguage(lang) },
+                        take: 1
+                    }
+                }
+            },
+            offers: {
+                where: {
+                    isActive: true,
+                    startDate: { lte: new Date() },
+                    OR: [
+                        { endDate: null },
+                        { endDate: { gte: new Date() } }
+                    ]
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 1
+            }
+        }
+    });
+
     if (!product) {
         throw new CustomError('product_not_found', 404);
     }
     return product;
-}
+};
 
-const updateProduct = async (id, data) => {
-    const existing = await prisma.product.findUnique({ where: { id: parseInt(id) } });
+
+const updateProduct = async (id, name, description, color, price, stock, discount, weight, manufacturer, categoryName, rank, lang, images) => {
+    const existing = await prisma.product.findUnique({ where: { id } });
     if (!existing) {
-        throw new CustomError('product_not_found', 404);
+        throw new CustomError('Product not found', 404);
     }
-    const updated = await prisma.product.update({
-        where: { id: parseInt(id) },
-        data
-    })
-    return updated;
-}
+
+    const update = await prisma.product.update({
+        where: { id },
+        data: {
+            price: parseFloat(price) || existing.price,
+            stock: parseInt(stock) || existing.stock,
+            discount: parseFloat(discount) || existing.discount,
+            weight: parseFloat(weight) || existing.weight,
+        }
+    });
+    if (!update) {
+        throw new CustomError("Error in update product")
+    }
+    console.log("update product: ", update)
+    if (images && images.length > 0) {
+        await prisma.productImage.deleteMany({
+            where: { productId: id }
+        });
+
+        await Promise.all(images.map((img, index) =>
+            prisma.productImage.create({
+                data: {
+                    url: img.url,
+                    isPrimary: img.isPrimary || index === 0,
+                    productId: id
+                }
+            })
+        ));
+    }
+    if (categoryName) {
+        await prisma.category.update({
+            where: { id: existing.categoryId },
+            data: {
+                name: categoryName
+            }
+        })
+    }
+    if (name || description || color || manufacturer) {
+        const normLang = normalizeLanguage(lang);
+        const existingTranslation = await prisma.productTranslation.findFirst({
+            where: { productId: id, language: normLang }
+        });
+
+        if (existingTranslation) {
+            await prisma.productTranslation.update({
+                where: { id: existingTranslation.id },
+                data: {
+                    name: name ?? existingTranslation.name,
+                    description: description ?? existingTranslation.description,
+                    color: color ?? existingTranslation.color,
+                    manufacturer: manufacturer ?? existingTranslation.manufacturer
+                }
+            });
+        } else {
+            await prisma.productTranslation.create({
+                data: {
+                    productId: id,
+                    language: normLang,
+                    name: name || '',
+                    description: description || '',
+                    color: color || '',
+                    manufacturer: manufacturer || ''
+                }
+            });
+        }
+    }
+
+    return await prisma.product.findUnique({
+        where: { id },
+        include: {
+            translations: true,
+            images: true,
+            category: true
+        }
+    });
+};
+
 
 const updateProductRank = async (id, rank) => {
-    const existing = await prisma.product.findUnique({ where: { id: parseInt(id) } });
+    const existing = await prisma.product.findUnique({ where: { id } });
     if (!existing) {
-        throw new CustomError('product_not_found', 404);
+        throw new CustomError('Product not found', 404);
     }
-    const updated = await prisma.product.update({
-        where: { id: parseInt(id) },
-        data: { rank },
-    })
-    return updated;
-}
+
+    return await prisma.product.update({
+        where: { id },
+        data: { rank: parseInt(rank) },
+        include: {
+            translations: true,
+            images: { where: { isPrimary: true } },
+            category: true
+        }
+    });
+};
+
+
+const setPrimaryImage = async (productId, imageId) => {
+    return await prisma.$transaction([
+        // Reset all images to not primary
+        prisma.productImage.updateMany({
+            where: { productId },
+            data: { isPrimary: false }
+        }),
+        // Set the selected image as primary
+        prisma.productImage.update({
+            where: { id: imageId },
+            data: { isPrimary: true }
+        })
+    ]).then(([_, updatedImage]) => updatedImage);
+};
+
+
+const searchProducts = async (query, language = 'EN') => {
+    return await prisma.product.findMany({
+        where: {
+            translations: {
+                some: {
+                    language: normalizeLanguage(language),
+                    OR: [
+                        { name: { contains: query, mode: 'insensitive' } },
+                        { description: { contains: query, mode: 'insensitive' } }
+                    ]
+                }
+            }
+        },
+        include: {
+            translations: {
+                where: { language: normalizeLanguage(language) },
+                take: 1
+            },
+            images: {
+                where: { isPrimary: true },
+                take: 1
+            },
+            category: {
+                include: {
+                    translations: {
+                        where: { language: normalizeLanguage(language) },
+                        take: 1
+                    }
+                }
+            }
+        },
+        take: 10
+    });
+};
 
 module.exports = {
     createProduct,
@@ -100,4 +315,6 @@ module.exports = {
     getProductById,
     updateProduct,
     updateProductRank,
-}
+    setPrimaryImage,
+    searchProducts
+};

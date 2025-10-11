@@ -51,16 +51,16 @@ class ProvinceService {
   async createProvince(name) {
     const existing = await prisma.province.findUnique({
       where: {
-        name
+        code:name
       }
     })
     if (existing) {
-      throw new CustomError('province_already_exist',409)
+      throw new CustomError('province_already_exist', 409)
     }
 
     return await prisma.province.create({
       data: {
-        name
+        code:name
       }
     });
   }
@@ -69,14 +69,31 @@ class ProvinceService {
     const existing = await prisma.province.findUnique({
       where: {
         id: parseInt(id)
+      },
+      include: {
+        deliveryFees: {
+          select: { productId: true, fee: true }
+        }
       }
     })
     if (!existing) {
       throw new CustomError("province_not_found", 404)
     }
+
+    const duplicate = await prisma.province.findFirst({
+      where: {
+        code:name,
+        NOT: { id: parseInt(id) }
+      }
+    });
+
+    if (duplicate) {
+      throw new CustomError("province_already_exist", 409);
+    }
+
     return await prisma.province.update({
       where: { id: parseInt(id) },
-      data: { name }
+      data: { code : name }
     });
 
   }

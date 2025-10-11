@@ -13,7 +13,7 @@ const {
 
 router.post(
   '/provinces/:provinceId',
-  createOrderValidation,
+  // createOrderValidation,
   orderController.createOrder
 );
 
@@ -28,7 +28,7 @@ router.get(
 
 router.get(
   '/:id',
-  getOrderByIdValidation,
+  // getOrderByIdValidation,
   orderController.getOrderById
 );
 
@@ -37,7 +37,7 @@ router.patch(
   '/:id/status',
   verifyToken,
   allowTo('ADMIN'),
-  updateOrderStatusValidation,
+  // updateOrderStatusValidation,
   orderController.updateOrderStatus
 );
 

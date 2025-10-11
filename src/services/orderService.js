@@ -4,8 +4,8 @@ const CustomError = require('../errors/CustomError');
 class OrderService {
   async createOrder(userFirstName, userLastName, provinceId, city, address, phoneNumber, secondPhoneNumber, items) {
     const province = await prisma.province.findUnique({
-      where: { id: parseInt(provinceId) },
-      select: { id: true, name: true }
+      where: { id: provinceId },
+      select: { id: true, code: true }
     });
 
     if (!province) {
@@ -17,7 +17,7 @@ class OrderService {
     
     for (const item of items) {
       const product = await prisma.product.findUnique({
-        where: { id: parseInt(item.productId )}
+        where: { id: item.productId }
       });
 
       console.log("Product",product)
@@ -31,7 +31,7 @@ class OrderService {
 
       totalPrice += product.price * item.quantity;
       orderItems.push({
-        productId: parseInt(product.id),
+        productId: product.id,
         quantity: item.quantity,
         price: product.price
       });
@@ -42,7 +42,7 @@ class OrderService {
 
       for (const item of items) {
         await prisma.product.update({
-          where: { id: parseInt(item.productId) },
+          where: { id: item.productId },
           data: { stock: { decrement: item.quantity } }
         });
       }
@@ -50,7 +50,7 @@ class OrderService {
       return await prisma.order.create({
         data: {
           province: {
-            connect: { id: parseInt(provinceId) }
+            connect: { id: provinceId }
           },
           city,
           address,
@@ -88,7 +88,7 @@ class OrderService {
         province: {
           select: {
             id: true,
-            name: true
+            code: true
             
           }
         }
@@ -101,7 +101,7 @@ class OrderService {
 
   async getOrderById(id) {
     const order = await prisma.order.findUnique({
-      where: { id: parseInt(id) },
+      where: { id },
       include: {
         orderItems: {
           include: {
@@ -127,7 +127,7 @@ class OrderService {
   async updateOrderStatus(id, status) {
 
     return await prisma.order.update({
-      where: { id: parseInt(id) },
+      where: { id },
       data: { status },
       include: {
         orderItems: {

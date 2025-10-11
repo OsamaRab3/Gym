@@ -32,6 +32,7 @@ const contact = require('./api/routes/contactusRoutes');
 const categoryRoutes = require('./api/routes/categoryRoutes');
 const orderRoutes = require('./api/routes/orderRoutes')
 const provinceRoutes = require('./api/routes/provinceRoutes')
+const adRoutes = require('./api/routes/adRoutes')
 app.get('/',(req,res)=>{
     res.status(200).json({
     message: req.t('welcome'),
@@ -47,6 +48,7 @@ app.use('/api/contact', contact);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/orders',orderRoutes)
 app.use('/api/provinces',provinceRoutes)
+app.use('/api/ad',adRoutes)
 
 
 // Handle 404 Not Found

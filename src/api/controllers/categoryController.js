@@ -24,7 +24,8 @@ const createCategory = asyncErrorHandler(async (req, res) => {
   }
 
   const { name } = req.body;
-  const category = await categoryService.createCategory(name);
+  const images = req.files.map(file => `/uploads/${file.filename}`);
+  const category = await categoryService.createCategory(name,images[0]);
 
   res.status(201).json({
     success: true,
@@ -35,7 +36,7 @@ const createCategory = asyncErrorHandler(async (req, res) => {
 
 });
 
-const updateCategory = asyncErrorHandler(async (req, res) => {
+const updateCategory = asyncErrorHandler(async (req, res,next) => {
 
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
@@ -45,8 +46,9 @@ const updateCategory = asyncErrorHandler(async (req, res) => {
 
   const { id } = req.params;
   const { name } = req.body;
+  const images = req.files.map(file => `/uploads/${file.filename}`);
 
-  const updatedCategory = await categoryService.updateCategory(id, name);
+  const updatedCategory = await categoryService.updateCategory(id, name,images[0]);
 
   res.status(200).json({
     success: true,

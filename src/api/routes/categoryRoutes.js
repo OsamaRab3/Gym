@@ -6,7 +6,7 @@ const {
   createCategoryValidation,
   updateCategoryValidation,
 } = require('../../validation/categoryValidation');
-
+const { multupload } = require('../../utils/fileUpload');
 const router = express.Router();
 
 // Public routes
@@ -21,6 +21,7 @@ router.post(
   verifyToken,
   allowTo('ADMIN'),
   createCategoryValidation,
+  multupload('images'),
   categoryController.createCategory
 );
 
@@ -29,6 +30,7 @@ router.put(
   verifyToken,
   allowTo('ADMIN'),
   updateCategoryValidation,
+   multupload('images'),
   categoryController.updateCategory
 );
 

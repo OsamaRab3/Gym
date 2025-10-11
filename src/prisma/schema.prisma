@@ -155,8 +155,8 @@ model DeliveryFee {
 
 model Ad {
   id            String    @id @default(uuid()) @db.Char(36)
-  title         String
-  description   String?
+  title         String?   @db.VarChar(255)
+  description   String?   @db.Text
   isActive      Boolean   @default(false)
   isFeatured    Boolean   @default(false)
   discountType  String?   @default("PERCENT") // "PERCENT" or "FIXED"

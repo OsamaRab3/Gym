@@ -63,6 +63,12 @@ const deleteProduct = async (id) => {
     }
 
     await prisma.$transaction([
+        prisma.discountedProduct.deleteMany({
+            where: { productId: id }
+        }),
+        prisma.orderItem.deleteMany({
+            where: { productId: id }
+        }),
         prisma.productImage.deleteMany({
             where: { productId: id }
         }),

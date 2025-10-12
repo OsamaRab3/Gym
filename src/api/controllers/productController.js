@@ -73,7 +73,7 @@ const deleteProduct = asyncErrorHandler(async (req, res, next) => {
 
 
 const getAllProducts = asyncErrorHandler(async (req, res) => {
-    const lang = req.query.lang || 'AR';
+    const lang = req.query.lang || 'ar';
     const products = await productServices.getAllProducts(lang);
 
     res.status(200).json({
@@ -100,12 +100,11 @@ const getProductById = asyncErrorHandler(async (req, res, next) => {
 });
 
 const updateProduct = asyncErrorHandler(async (req, res, next) => {
+    validateOrThrow(req);
 
     const { id } = req.params;
     const { name, description, color, price, stock, discount, weight, manufacturer, categoryName, rank } = req.body;
-
     const lang = req.query.lang || 'AR';
-
     const files = req.files ? (Array.isArray(req.files) ? req.files : [req.files]) : [];
     const images = files.map((file, index) => ({
         url: `/uploads/${file.filename}`,

@@ -1,33 +1,66 @@
-const express = require('express')
-const router = express.Router()
+const express = require('express');
+const router = express.Router();
 
-const verifyToken = require('../../middleware/verifyToken')
-const prisma = require('../../prisma/prisma')
-const productController = require('../controllers/productController')
-const allowTo = require('../../middleware/allowTo')
+const verifyToken = require('../../middleware/verifyToken');
+const productController = require('../controllers/productController');
+const allowTo = require('../../middleware/allowTo');
 const { multupload } = require('../../utils/fileUpload');
-const multer = require('multer');
-const upload = multer();
 
 
-// const { 
-//   // createProductValidation, 
-//   updateProductValidation, 
-//   idParamValidation, 
-//   updateProductRankValidation 
-// } = require('../../validation/product.validation')
+const { 
+  createProductValidation, 
+  // updateProductValidation, 
+  // idParamValidation, 
+  // updateProductRankValidation,
+  // languageQueryValidation
+} = require('../../validation/product.validation');
+
+
+
 
 router.route('/')
   .get(productController.getAllProducts)
-  .post( multupload('images'), productController.createProduct)
-// verifyToken, allowTo("ADMIN")
-router.route('/:id')
-  .get( productController.getProductById)
-  .put( multupload('images'),productController.updateProduct)
-  .delete(verifyToken, allowTo("ADMIN"), productController.deleteProduct)
+  .post(
+    verifyToken, 
+    allowTo("ADMIN"),
+    multupload('images'), 
+    createProductValidation,
+    productController.createProduct
+  );
 
+
+router.route('/:id')
+  .get(productController.getProductById)
+  .put(
+    verifyToken,
+    allowTo("ADMIN"),
+    multupload('images'),
+    productController.updateProduct
+  )
+  .delete(
+    verifyToken, 
+    allowTo("ADMIN"), 
+    productController.deleteProduct
+  );
 
 router.route('/:id/rank')
-  .patch(verifyToken, allowTo("ADMIN"), productController.updateProductRank)
+  .patch(
+    verifyToken, 
+    allowTo("ADMIN"), 
+    productController.updateProductRank
+  );
+
+router.patch(
+  '/:productId/images/:imageId/set-primary',
+  verifyToken,
+  allowTo("ADMIN"),
+  productController.setPrimaryImage
+);
+
+
+router.get(
+  '/search',
+  productController.searchProducts
+);
 
 module.exports = router;

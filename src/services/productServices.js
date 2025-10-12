@@ -1,4 +1,4 @@
-const prisma = require('../prisma/prisma')
+const prisma = require('../prisma/prisma');
 const CustomError = require('../errors/CustomError');
 
 const normalizeLanguage = (lang) => {
@@ -85,52 +85,55 @@ const deleteProduct = async (id) => {
 
 
 const getAllProducts = async (lang = 'AR') => {
+    const language = normalizeLanguage(lang);
     const products = await prisma.product.findMany({
+        where: {
+            translations: {
+                some: {
+                    language: language
+                }
+            }
+        },
         include: {
             translations: {
                 where: {
-                    language: normalizeLanguage(lang)
+                    language: language
                 }
             },
             images: {
-                where: {
-                    isPrimary: true
-                }
+                where: { isPrimary: true }
             },
             category: true
         },
-        orderBy: {
-            createdAt: 'desc'
-        }
+        orderBy: { createdAt: 'desc' }
     });
 
-    return products.filter(product => product.translations.length > 0);
-
+    return products;
 };
 
 
 const getProductById = async (id, lang = 'AR') => {
+    const language = normalizeLanguage(lang);
+
     const product = await prisma.product.findUnique({
         where: { id },
         include: {
             translations: {
-                where: {
-                    productId: id,
-                },
+                where: { language },
                 select: {
                     name: true,
                     description: true,
                     color: true,
-                    manufacturer: true
-
+                    manufacturer: true,
+                    language: true
                 }
             },
             images: true,
             category: {
                 include: {
                     translations: {
-                        where: { language: normalizeLanguage(lang) },
-                        take: 1
+                        where: { language },
+                        select: { name: true }
                     }
                 }
             },
@@ -150,16 +153,22 @@ const getProductById = async (id, lang = 'AR') => {
     });
 
     if (!product) {
-        throw new CustomError('product_not_found', 404);
+        throw new CustomError(('product_not_found'), 404);
     }
     return product;
 };
 
 
-const updateProduct = async (id, name, description, color, price, stock, discount, weight, manufacturer, categoryName, rank, lang, images) => {
-    const existing = await prisma.product.findUnique({ where: { id } });
+const updateProduct = async (id, name, description, color, price, stock, discount, weight, manufacturer, categoryName, rank, lang = 'AR', images) => {
+    const language = normalizeLanguage(lang);
+
+    const existing = await prisma.product.findUnique({
+        where: { id },
+        include: { category: true }
+    });
+
     if (!existing) {
-        throw new CustomError('Product not found', 404);
+        throw new CustomError(('product_not_found'), 404);
     }
 
     const update = await prisma.product.update({
@@ -171,10 +180,7 @@ const updateProduct = async (id, name, description, color, price, stock, discoun
             weight: parseFloat(weight) || existing.weight,
         }
     });
-    if (!update) {
-        throw new CustomError("Error in update product")
-    }
-    console.log("update product: ", update)
+
     if (images && images.length > 0) {
         await prisma.productImage.deleteMany({
             where: { productId: id }
@@ -191,17 +197,17 @@ const updateProduct = async (id, name, description, color, price, stock, discoun
         ));
     }
     if (categoryName) {
-        await prisma.category.update({
-            where: { id: existing.categoryId },
-            data: {
-                name: categoryName
-            }
-        })
+        const category = await prisma.category.findFirst({ where: { name: categoryName } });
+        if (!category) throw new CustomError("Category_not_found");
+
+        await prisma.product.update({
+            where: { id },
+            data: { categoryId: category.id }
+        });
     }
     if (name || description || color || manufacturer) {
-        const normLang = normalizeLanguage(lang);
         const existingTranslation = await prisma.productTranslation.findFirst({
-            where: { productId: id, language: normLang }
+            where: { productId: id, language: language }
         });
 
         if (existingTranslation) {
@@ -214,27 +220,20 @@ const updateProduct = async (id, name, description, color, price, stock, discoun
                     manufacturer: manufacturer ?? existingTranslation.manufacturer
                 }
             });
-        } else {
-            await prisma.productTranslation.create({
-                data: {
-                    productId: id,
-                    language: normLang,
-                    name: name || '',
-                    description: description || '',
-                    color: color || '',
-                    manufacturer: manufacturer || ''
-                }
-            });
         }
+
     }
 
     return await prisma.product.findUnique({
-        where: { id },
-        include: {
-            translations: true,
-            images: true,
-            category: true
-        }
+        where: {
+            id, translations: {
+                some: {
+                    language: language
+                }
+            }
+        },
+
+        include: { translations: { where: { language: language } }, images: true, category: true }
     });
 };
 
@@ -242,7 +241,7 @@ const updateProduct = async (id, name, description, color, price, stock, discoun
 const updateProductRank = async (id, rank) => {
     const existing = await prisma.product.findUnique({ where: { id } });
     if (!existing) {
-        throw new CustomError('Product not found', 404);
+        throw new CustomError('Product_not_found', 404);
     }
 
     return await prisma.product.update({
@@ -273,22 +272,38 @@ const setPrimaryImage = async (productId, imageId) => {
 };
 
 
-const searchProducts = async (query, language = 'EN') => {
+const searchProducts = async (query, language = 'AR') => {
+    const lang = normalizeLanguage(language);
+
     return await prisma.product.findMany({
         where: {
-            translations: {
-                some: {
-                    language: normalizeLanguage(language),
-                    OR: [
-                        { name: { contains: query, mode: 'insensitive' } },
-                        { description: { contains: query, mode: 'insensitive' } }
-                    ]
+            OR: [
+                {
+                    translations: {
+                        some: {
+                            language: lang,
+                            OR: [
+                                { name: { contains: query, mode: 'insensitive' } },
+                                { description: { contains: query, mode: 'insensitive' } }
+                            ]
+                        }
+                    }
+                },            {
+                    translations: {
+                        some: {
+                            language: lang === 'AR' ? 'EN' : 'AR',
+                            OR: [
+                                { name: { contains: query, mode: 'insensitive' } },
+                                { description: { contains: query, mode: 'insensitive' } }
+                            ]
+                        }
+                    }
                 }
-            }
+            ]
         },
         include: {
             translations: {
-                where: { language: normalizeLanguage(language) },
+                where: { language: lang },
                 take: 1
             },
             images: {

@@ -126,5 +126,4 @@ yarn-error.log*
 ehthumbs.db
 Thumbs.db
 
-*.md
 package-lock.json

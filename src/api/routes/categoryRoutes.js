@@ -20,8 +20,9 @@ router.post(
   '/',
   verifyToken,
   allowTo('ADMIN'),
-  createCategoryValidation,
   multupload('images'),
+  createCategoryValidation,
+
   categoryController.createCategory
 );
 
@@ -29,8 +30,9 @@ router.put(
   '/:id',
   verifyToken,
   allowTo('ADMIN'),
+  multupload('images'),
   updateCategoryValidation,
-   multupload('images'),
+
   categoryController.updateCategory
 );
 

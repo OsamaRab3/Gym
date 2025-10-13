@@ -103,7 +103,26 @@ const getAllProducts = async (lang = 'AR') => {
             images: {
                 where: { isPrimary: true }
             },
-            category: true
+            category: true,
+            offers: {
+                where: {
+                    isActive: true,
+                    startDate: { lte: new Date() },
+                    OR: [
+                        { endDate: null },
+                        { endDate: { gte: new Date() } }
+                    ]
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 1,
+                select: {
+                    discountType: true,
+                    discountValue: true,
+                    productId: true,
+                    endDate: true,
+                    startDate: true
+                }
+            }
         },
         orderBy: { createdAt: 'desc' }
     });
@@ -130,11 +149,10 @@ const getProductById = async (id, lang = 'AR') => {
             },
             images: true,
             category: {
-                include: {
-                    translations: {
-                        where: { language },
-                        select: { name: true }
-                    }
+                select:{
+                    id:true,
+                    name:true,
+                    imageUrl:true
                 }
             },
             offers: {
@@ -147,7 +165,14 @@ const getProductById = async (id, lang = 'AR') => {
                     ]
                 },
                 orderBy: { createdAt: 'desc' },
-                take: 1
+                take: 1,
+                select: {
+                    discountType: true,
+                    discountValue: true,
+                    productId: true,
+                    endDate: true,
+                    startDate: true
+                }
             }
         }
     });
@@ -288,7 +313,7 @@ const searchProducts = async (query, language = 'AR') => {
                             ]
                         }
                     }
-                },            {
+                }, {
                     translations: {
                         some: {
                             language: lang === 'AR' ? 'EN' : 'AR',

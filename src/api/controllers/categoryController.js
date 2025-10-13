@@ -15,7 +15,7 @@ const getCategories = asyncErrorHandler(async (req, res) => {
 
 });
 
-const createCategory = asyncErrorHandler(async (req, res) => {
+const createCategory = asyncErrorHandler(async (req, res,next) => {
 
   const errors = validationResult(req)
   if (!errors.isEmpty()) {

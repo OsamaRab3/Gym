@@ -26,8 +26,18 @@ const createProduct = async ({ name, description, color, price, stock, discount,
             },
             category: {
                 connectOrCreate: {
-                    where: { name: categoryName },
-                    create: { name: categoryName }
+                    where: {
+                        name: categoryName
+                    },
+                    create: {
+                        name: categoryName,
+                        translations: {
+                            create: {
+                                name: categoryName,
+                                language: normalizeLanguage(lang)
+                            }
+                        }
+                    }
                 }
             },
             images: {
@@ -40,7 +50,11 @@ const createProduct = async ({ name, description, color, price, stock, discount,
         include: {
             translations: true,
             images: true,
-            category: true
+            category: {
+                where: {
+                    translations: { some: { language: normalizeLanguage(lang) } }
+                }
+            }
         }
     });
 
@@ -103,7 +117,18 @@ const getAllProducts = async (lang = 'AR') => {
             images: {
                 where: { isPrimary: true }
             },
-            category: true,
+            category: {
+                include: {
+                    translations: {
+                        where: { language: language },
+                        select: {
+                            name: true,
+                            description: true,
+                            language: true
+                        }
+                    }
+                }
+            },
             offers: {
                 where: {
                     isActive: true,
@@ -131,11 +156,12 @@ const getAllProducts = async (lang = 'AR') => {
 };
 
 
-const getProductById = async (id, lang = 'AR') => {
+const getProductById = async (id, lang) => {
     const language = normalizeLanguage(lang);
 
-    const product = await prisma.product.findUnique({
-        where: { id },
+    const product = await prisma.product.findFirst({
+        where: { id, translations: { some: { language } } },
+
         include: {
             translations: {
                 where: { language },
@@ -149,10 +175,18 @@ const getProductById = async (id, lang = 'AR') => {
             },
             images: true,
             category: {
-                select:{
-                    id:true,
-                    name:true,
-                    imageUrl:true
+                select: {
+                    id: true,
+                    name: true,
+                    imageUrl: true,
+                    translations: {
+                        where: { language },
+                        select: {
+                            name: true,
+                            description: true,
+                            language: true
+                        }
+                    }
                 }
             },
             offers: {
@@ -222,8 +256,36 @@ const updateProduct = async (id, name, description, color, price, stock, discoun
         ));
     }
     if (categoryName) {
-        const category = await prisma.category.findFirst({ where: { name: categoryName } });
-        if (!category) throw new CustomError("Category_not_found");
+        const category = await prisma.category.upsert({
+            where: { name: categoryName },
+            update: {
+                translations: {
+                    upsert: {
+                        where: {
+                            categoryId_language: {
+                                categoryId: undefined, 
+                                language: language
+                            }
+                        },
+                        create: {
+                            name: categoryName,
+                            language: language
+                        },
+                        update: {}
+                    }
+                }
+            },
+            create: {
+                name: categoryName,
+                translations: {
+                    create: {
+                        name: categoryName,
+                        language: language
+                    }
+                }
+            },
+            include: { translations: true }
+        });
 
         await prisma.product.update({
             where: { id },

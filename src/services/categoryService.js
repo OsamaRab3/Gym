@@ -1,12 +1,24 @@
 const prisma = require('../prisma/prisma')
 const CustomError = require('../errors/CustomError')
 
+const normalizeLanguage = (lang) => {
+  if (!lang) return 'AR';
+  const upper = String(lang).toUpperCase();
+  return upper === 'EN' ? 'EN' : 'AR';
+};
 
 class CategoryService {
 
-  async getAllCategories() {
+  async getAllCategories(lang) {
+    const language = normalizeLanguage(lang)
     return await prisma.category.findMany({
+      where: {
+        translations: { some: { language } }
+      },
       include: {
+        translations: {
+          where: { language }
+        },
         _count: {
           select: { products: true }
         }
@@ -15,7 +27,7 @@ class CategoryService {
     });
   }
 
-  async createCategory(name, images) {
+  async createCategory(lang, name, images) {
     const existingCategory = await prisma.category.findUnique({
       where: { name }
     });
@@ -24,41 +36,76 @@ class CategoryService {
       throw new CustomError('category_exists', 409);
     }
 
-    return await prisma.category.create({
+    const category = await prisma.category.create({
       data: {
         name,
-        imageUrl: images
+        imageUrl: images,
+        translations: {
+          create: {
+            name, language: normalizeLanguage(lang)
+          }
+        }
 
+      },
+      include: {
+        translations: true
       }
 
     });
+    return category;
   }
 
-  async updateCategory(id, name,image) {
+  async updateCategory(lang, id, name, image) {
+    const language = normalizeLanguage(lang);
+
     const category = await prisma.category.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        translations: true
+      }
     });
 
     if (!category) {
       throw new CustomError('category_not_found', 404);
     }
 
-    if (name && name !== category.name) {
+    if (name) {
       const nameExists = await prisma.category.findFirst({
         where: {
-          name,
+          name: { equals: name, lt: 'insensitive' },
           NOT: { id }
         }
       });
 
       if (nameExists) {
-        throw new CustomError('category_name_taken', 404);
+        throw new CustomError('category_name_taken', 400);
       }
     }
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (image) updateData.imageUrl = image;
+    const existingTranslation = category.translations.find(t => t.language === language);
 
-    return await prisma.category.update({
-      where: { id },
-      data: { name ,imageUrl:image}
+    return await prisma.$transaction(async (prisma) => {
+      if (Object.keys(updateData).length > 0) {
+        await prisma.category.update({
+          where: { id },
+          data: updateData
+        });
+      }
+      if (existingTranslation) {
+        await prisma.categoryTranslation.update({
+          where: { id: existingTranslation.id },
+          data: { name }
+        });
+      } 
+
+      return prisma.category.findUnique({
+        where: { id },
+        include: {
+          translations: true
+        }
+      });
     });
   }
 
@@ -66,8 +113,9 @@ class CategoryService {
     const category = await prisma.category.findUnique({
       where: { id },
       include: {
-        _count: {
-          select: { products: true }
+        products: {
+          select: { id: true },
+          take: 1 
         }
       }
     });
@@ -76,22 +124,43 @@ class CategoryService {
       throw new CustomError('category_not_found', 404);
     }
 
-    if (category._count.products > 0) {
-      throw new CustomError('category_has_products', 403);
-    }
 
-    return await prisma.category.delete({
-      where: { id }
+    return await prisma.$transaction(async (prisma) => {
+      await prisma.categoryTranslation.deleteMany({
+        where: { categoryId: id }
+      });
+      return await prisma.category.delete({
+        where: { id },
+        include: {
+          translations: true,
+          products: true
+        }
+      });
     });
   }
 
-  async getCategoryById(id) {
+  async getCategoryById(lang, id) {
     const category = await prisma.category.findUnique({
-      where: { id },
+      where: {
+        id, translations: {
+          some: {
+            language: normalizeLanguage(lang)
+          }
+        }
+      },
       include: {
         _count: {
-          select: { products: true }
-        }
+          select: {
+            products: {
+              where: {
+                translations: {
+                  some: { language: normalizeLanguage(lang) }
+                }
+              }
+            }
+          }
+        },
+        translations: true
       }
     });
 

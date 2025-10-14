@@ -5,7 +5,8 @@ const categoryService = require('../../services/categoryService');
 
 const getCategories = asyncErrorHandler(async (req, res) => {
 
-  const categories = await categoryService.getAllCategories();
+  const { lang } = req.query;
+  const categories = await categoryService.getAllCategories(lang);
 
   res.status(200).json({
     success: true,
@@ -15,7 +16,7 @@ const getCategories = asyncErrorHandler(async (req, res) => {
 
 });
 
-const createCategory = asyncErrorHandler(async (req, res,next) => {
+const createCategory = asyncErrorHandler(async (req, res, next) => {
 
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
@@ -25,7 +26,8 @@ const createCategory = asyncErrorHandler(async (req, res,next) => {
 
   const { name } = req.body;
   const images = req.files.map(file => `/uploads/${file.filename}`);
-  const category = await categoryService.createCategory(name,images[0]);
+  const { lang } = req.query || "AR";
+  const category = await categoryService.createCategory(lang, name, images[0]);
 
   res.status(201).json({
     success: true,
@@ -36,7 +38,7 @@ const createCategory = asyncErrorHandler(async (req, res,next) => {
 
 });
 
-const updateCategory = asyncErrorHandler(async (req, res,next) => {
+const updateCategory = asyncErrorHandler(async (req, res, next) => {
 
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
@@ -46,9 +48,10 @@ const updateCategory = asyncErrorHandler(async (req, res,next) => {
 
   const { id } = req.params;
   const { name } = req.body;
+  const { lang } = req.query || "AR";
   const images = req.files.map(file => `/uploads/${file.filename}`);
 
-  const updatedCategory = await categoryService.updateCategory(id, name,images[0]);
+  const updatedCategory = await categoryService.updateCategory(lang, id, name, images[0]);
 
   res.status(200).json({
     success: true,
@@ -72,8 +75,8 @@ const deleteCategory = asyncErrorHandler(async (req, res) => {
 
 const getCategoryById = asyncErrorHandler(async (req, res) => {
   const { id } = req.params;
-
-  const category = await categoryService.getCategoryById(id);
+  const { lang } = req.query || "AR";
+  const category = await categoryService.getCategoryById(lang, id);
 
   res.json({
     success: true,

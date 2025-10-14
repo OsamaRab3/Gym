@@ -1,41 +1,36 @@
 const prisma = require('../prisma/prisma');
 const CustomError = require('../errors/CustomError');
+const normalizeLanguage = (lang) => {
+  if (!lang) return 'AR';
+  const upper = String(lang).toUpperCase();
+  return upper === 'EN' ? 'EN' : 'AR';
+};
 
 class ProvinceService {
-  async getAllProvinces() {
+  async getAllProvinces(lang) {
+    const language = normalizeLanguage(lang);
     return await prisma.province.findMany({
-      include: {
-        deliveryFees: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                price: true
-              }
-            }
+      where: {
+        translations: {
+          some: {
+            language
           }
         }
       },
-      orderBy: {
-        name: 'asc'
-      }
+      include:{
+        translations: true
+      },
     });
   }
 
-  async getProvinceById(id) {
+  async getProvinceById(lang,id) {
+    const language = normalizeLanguage(lang);
     const province = await prisma.province.findUnique({
-      where: { id: parseInt(id) },
+      where: { id },
       include: {
-        deliveryFees: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                price: true
-              }
-            }
+        translations: {
+          where:{
+            language
           }
         }
       }
@@ -48,10 +43,11 @@ class ProvinceService {
     return province;
   }
 
-  async createProvince(name) {
-    const existing = await prisma.province.findUnique({
+  async createProvince(lang, name) {
+    const language = normalizeLanguage(lang);
+    const existing = await prisma.provinceTranslation.findFirst({
       where: {
-        code:name
+        name
       }
     })
     if (existing) {
@@ -60,7 +56,11 @@ class ProvinceService {
 
     return await prisma.province.create({
       data: {
-        code:name
+        translations: {
+          create: { name, language }
+        }
+      }, include: {
+        translations: true
       }
     });
   }
@@ -68,7 +68,7 @@ class ProvinceService {
   async updateProvince(id, name) {
     const existing = await prisma.province.findUnique({
       where: {
-        id: parseInt(id)
+        id
       },
       include: {
         deliveryFees: {
@@ -82,8 +82,8 @@ class ProvinceService {
 
     const duplicate = await prisma.province.findFirst({
       where: {
-        code:name,
-        NOT: { id: parseInt(id) }
+        code: name,
+        NOT: { id }
       }
     });
 
@@ -92,25 +92,42 @@ class ProvinceService {
     }
 
     return await prisma.province.update({
-      where: { id: parseInt(id) },
-      data: { code : name }
+      where: { id },
+      data: { code: name }
     });
 
   }
 
-  async deleteProvince(id) {
-    const existing = await prisma.province.findUnique({
-      where: {
-        id: parseInt(id)
-      }
-    })
-    if (!existing) {
-      throw new CustomError("province_not_found", 404)
-    }
-    return await prisma.province.delete({
-      where: { id: parseInt(id) }
+  async deleteProvince(lang, id) {
+
+    const ordersCount = await prisma.order.count({
+      where: { provinceId: id }
     });
 
+    if (ordersCount > 0) {
+      throw new CustomError("cannot_delete_province_with_orders", 400);
+    }
+
+    const province = await prisma.province.findUnique({
+      where: { id },
+      include: { translations: true }
+    });
+    
+    if (!province) {
+      throw new CustomError("province_not_found", 404);
+    }
+
+    await prisma.provinceTranslation.deleteMany({
+      where: { provinceId: id }
+    });
+
+    await prisma.deliveryFee.deleteMany({
+      where: { provinceId: id }
+    });
+
+    return await prisma.province.delete({
+      where: { id }
+    });
   }
 
   async addOrUpdateDeliveryFee(provinceId, productId, fee) {

@@ -3,8 +3,9 @@ const CustomError = require('../../errors/CustomError');
 const provinceService = require('../../services/provinceService');
 
 const getAllProvinces = asyncErrorHandler(async (req, res) => {
-  const provinces = await provinceService.getAllProvinces();
-  
+  const { lang } = req.query || "AR";
+  const provinces = await provinceService.getAllProvinces(lang);
+
   res.status(200).json({
     success: true,
     message: req.t('provinces_retrieved'),
@@ -15,9 +16,9 @@ const getAllProvinces = asyncErrorHandler(async (req, res) => {
 
 const getProvinceById = asyncErrorHandler(async (req, res, next) => {
   const { id } = req.params;
-  
-  const province = await provinceService.getProvinceById(id);
-  
+  const { lang } = req.query || "AR";
+  const province = await provinceService.getProvinceById(lang,id);
+
   res.status(200).json({
     success: true,
     message: req.t('province_retrieved'),
@@ -27,9 +28,9 @@ const getProvinceById = asyncErrorHandler(async (req, res, next) => {
 
 const createProvince = asyncErrorHandler(async (req, res) => {
   const { name } = req.body;
-  
-  const province = await provinceService.createProvince(name);
-  
+  const { lang } = req.query || "AR";
+  const province = await provinceService.createProvince(lang, name);
+
   res.status(201).json({
     success: true,
     message: req.t('province_created'),
@@ -40,9 +41,11 @@ const createProvince = asyncErrorHandler(async (req, res) => {
 const updateProvince = asyncErrorHandler(async (req, res, next) => {
   const { id } = req.params;
   const { name } = req.body;
-  
-  const province = await provinceService.updateProvince(id, name);
-  
+  const { lang } = req.query || "AR";
+
+
+  const province = await provinceService.updateProvince(lang, id, name);
+
   res.status(200).json({
     success: true,
     message: req.t('province_updated'),
@@ -52,9 +55,11 @@ const updateProvince = asyncErrorHandler(async (req, res, next) => {
 
 const deleteProvince = asyncErrorHandler(async (req, res, next) => {
   const { id } = req.params;
-  
-  await provinceService.deleteProvince(id);
-  
+  const { lang } = req.query || "AR";
+
+
+  await provinceService.deleteProvince(lang, id);
+
   res.status(200).json({
     success: true,
     message: req.t('province_deleted')
@@ -64,13 +69,10 @@ const deleteProvince = asyncErrorHandler(async (req, res, next) => {
 const updateDeliveryFee = asyncErrorHandler(async (req, res, next) => {
   const { provinceId, productId } = req.params;
   const { fee } = req.body;
-  
-  const deliveryFee = await provinceService.addOrUpdateDeliveryFee(
-    provinceId, 
-    productId, 
-    fee
-  );
-  
+  const { lang } = req.query || "AR";
+
+  const deliveryFee = await provinceService.addOrUpdateDeliveryFee(lang, provinceId, productId, fee);
+
   res.status(200).json({
     success: true,
     message: req.t('delivery_fee_updated'),
@@ -80,9 +82,10 @@ const updateDeliveryFee = asyncErrorHandler(async (req, res, next) => {
 
 const removeDeliveryFee = asyncErrorHandler(async (req, res, next) => {
   const { provinceId, productId } = req.params;
-  
-  await provinceService.removeDeliveryFee(provinceId, productId);
-  
+  const { lang } = req.query || "AR";
+
+  await provinceService.removeDeliveryFee(lang, provinceId, productId);
+
   res.status(200).json({
     success: true,
     message: req.t('delivery_fee_removed')

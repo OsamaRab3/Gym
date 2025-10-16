@@ -42,12 +42,65 @@ const createCoupon = async ({ code, discount, type = 'PERCENT', validFrom, valid
 }
 
 const deleteCoupon = async (id) => {
-  const existing = await prisma.coupon.findUnique({ where: { id } })
-  if (!existing) {
-    throw new CustomError('coupon_not_found', 404)
-  }
-  await prisma.coupon.delete({ where: { id } })
-  return { id }
+  return await prisma.$transaction(async (prisma) => {
+    const coupon = await prisma.coupon.findUnique({
+      where: { id },
+      include: {
+        usages: true,
+        DiscountedProduct: true
+      }
+    });
+
+    if (!coupon) {
+      throw new CustomError('coupon_not_found', 404);
+    }
+
+    if (coupon.DiscountedProduct && coupon.DiscountedProduct.length > 0) {
+      await prisma.couponUsage.deleteMany({
+        where: {
+          discountedProducts: {
+            some: {
+              couponId: id
+            }
+          }
+        }
+      });
+      await prisma.discountedProduct.deleteMany({
+        where: { couponId: id }
+      });
+    }
+
+    if (coupon.usages && coupon.usages.length > 0) {
+      await prisma.couponUsage.deleteMany({
+        where: { couponId: id }
+      });
+    }
+
+    const productsWithCoupon = await prisma.product.findMany({
+      where: {
+        Coupon: {
+          some: { id }
+        }
+      },
+      select: { id: true }
+    });
+
+    await Promise.all(productsWithCoupon.map(product => 
+      prisma.product.update({
+        where: { id: product.id },
+        data: {
+          Coupon: {
+            disconnect: { id }
+          }
+        }
+      })
+    ));
+    await prisma.coupon.delete({
+      where: { id }
+    });
+
+    return id;
+  });
 }
 
 const getAllCoupons = async () => {
@@ -84,22 +137,334 @@ const applyDiscountToProduct = (lang,product, coupon) => {
   };
 };
 
+// const applyCouponToProducts = async (lang, coupon, deviceId) => {
+//   const expiresAt = coupon.validTo;
+
+//   const products = await prisma.product.findMany({
+//     where: { 
+//       stock: { gt: 0 },
+//       translations: {
+//         some: { language: normalizeLanguage(lang) }
+//       }
+//     },
+//     include: {
+//       translations: {
+//         where: {
+//           language: normalizeLanguage(lang)
+//         }
+//       },
+//       images: true,
+//       category: {
+//         select:{
+//           id:true,
+//           name: true,
+//           imageUrl:true
+//         }
+//       }
+//     }
+//   });
+
+//   const couponData = await prisma.coupon.findUnique({
+//     where: { id: coupon.id, isActive: true },
+//     select: {
+//       id: true,
+//       code: true,
+//       discount: true,
+//       type: true,
+//       maxUses: true,
+//       usedCount: true
+//     }
+//   });
+
+//   if (!couponData) {
+//     throw new CustomError('Coupon not found or inactive', 404);
+//   }
+
+//   if (couponData.maxUses && couponData.usedCount >= couponData.maxUses) {
+//     throw new CustomError('This coupon has reached its maximum usage limit', 400);
+//   }
+
+//   return await prisma.$transaction(async (tx) => {
+//     const couponUsage = await tx.couponUsage.create({
+//       data: {
+//         coupon: { connect: { id: coupon.id } },
+//         deviceId,
+//         expiresAt,
+//         usedAt: new Date()
+//       }
+//     },{timeout:50000});
+
+//     const discountedProducts = [];
+
+//     for (const product of products) {
+//       const { originalPrice, discountPrice } = applyDiscountToProduct(lang,product, coupon);
+//       const discountedProduct = await tx.discountedProduct.create({
+//         data: {
+//           coupon: { connect: { id: coupon.id } },
+//           product: { connect: { id: product.id } },
+//           CouponUsage: { connect: { id: couponUsage.id } },
+//           originalPrice,
+//           discountPrice,
+//           expiresAt,
+//           deviceId
+//         },
+//         include: {
+//           product: {
+//             where:{
+//               translations:{
+//                 some:{
+//                   language:normalizeLanguage(lang)
+//                 }
+//               }
+//             },
+//             include: {
+//               translations: {
+//                 where: { language: normalizeLanguage(lang) }
+//               },
+//               images: true,
+//               category: true
+//             }
+//           }
+//         }
+//       });
+//       discountedProducts.push(discountedProduct);
+//     }
+//     const discountedProductIds = discountedProducts.map(dp => dp.product.id);
+
+
+//     await tx.coupon.update({
+//       where: { id: coupon.id },
+//       data: {
+//         usedCount: { increment: 1 }
+//       }
+//     });
+//     const productsWithTranslations = await prisma.product.findMany({
+//       where: {
+//         id: { in: discountedProductIds },
+//         translations: {
+//           some: { language: normalizeLanguage(lang) }
+//         }
+//       },
+//       include: {
+//         translations: {
+//           where: { language: normalizeLanguage(lang) }
+//         },
+//         images: true,
+//         category: {
+//           select: {
+//             name: true,
+//             imageUrl: true
+//           }
+//         }
+//       }
+//     });
+//     const formattedProducts = discountedProducts
+//     .filter(dp=> dp.product.translations.length >0)
+//     .map(dp => {
+//       const translation = dp.product.translations?.[0] || {
+//         name: 'No translation available',
+//         description: '',
+//         color: '',
+//         manufacturer: ''
+//       };
+      
+//       return {
+//         id: dp.product.id,
+//         products: productsWithTranslations, 
+//         images: dp.product.images?.map(img => img.url) || [],
+//         categoryName: dp.product.category?.translations?.[0]?.name || 'Uncategorized',
+//         categoryImage: dp.product.category?.image || null,
+//         originalPrice: parseFloat(dp.originalPrice),
+//         price: parseFloat(dp.discountPrice),
+//         discountAmount: parseFloat((dp.originalPrice - dp.discountPrice).toFixed(2)),
+//         discountPercentage: coupon.type === 'PERCENT'
+//           ? coupon.discount
+//           : parseFloat((((dp.originalPrice - dp.discountPrice) / dp.originalPrice) * 100).toFixed(1)),
+//         expiresAt: dp.expiresAt
+//       };
+//     });
+
+//     return {
+//       id: coupon.id,
+//       code: coupon.code,
+//       discount: coupon.discount,
+//       type: coupon.type,
+//       expiresAt,
+//       affectedProducts: productsWithTranslations.length,
+//       products: productsWithTranslations
+//     };
+//   });
+// };
+
+// const applyCouponToProducts = async (lang, coupon, deviceId) => {
+//   const expiresAt = coupon.validTo;
+//   const normalizedLang = normalizeLanguage(lang);
+
+//   const products = await prisma.product.findMany({
+//     where: { 
+//       stock: { gt: 0 },
+//       translations: {
+//         some: { language: normalizedLang }
+//       }
+//     },
+//     include: {
+//       translations: {
+//         where: {
+//           language: normalizedLang
+//         }
+//       },
+//       images: true,
+//       category: {
+//         select: {
+//           id: true,
+//           name: true,
+//           imageUrl: true
+//         }
+//       }
+//     }
+//   });
+
+//   const couponData = await prisma.coupon.findUnique({
+//     where: { id: coupon.id, isActive: true },
+//     select: {
+//       id: true,
+//       code: true,
+//       discount: true,
+//       type: true,
+//       maxUses: true,
+//       usedCount: true
+//     }
+//   });
+
+//   if (!couponData) {
+//     throw new CustomError('Coupon not found or inactive', 404);
+//   }
+
+//   if (couponData.maxUses && couponData.usedCount >= couponData.maxUses) {
+//     throw new CustomError('This coupon has reached its maximum usage limit', 400);
+//   }
+
+//   return await prisma.$transaction(async (tx) => {
+//     const couponUsage = await tx.couponUsage.create({
+//       data: {
+//         coupon: { connect: { id: coupon.id } },
+//         deviceId,
+//         expiresAt,
+//         usedAt: new Date()
+//       }
+//     }, { timeout: 50000 });
+
+//     const discountedProducts = [];
+
+//     for (const product of products) {
+//       const { originalPrice, discountPrice } = applyDiscountToProduct(lang, product, coupon);
+//       const discountedProduct = await tx.discountedProduct.create({
+//         data: {
+//           coupon: { connect: { id: coupon.id } },
+//           product: { connect: { id: product.id } },
+//           CouponUsage: { connect: { id: couponUsage.id } },
+//           originalPrice,
+//           discountPrice,
+//           expiresAt,
+//           deviceId
+//         },
+//         include: {
+//           product: {
+//             where:{
+//               translations:{
+//                 some:{
+//                   language:normalizeLanguage(lang)
+//                 }
+//               }
+//             },
+//             include: {
+//               translations: {
+//                 where: { language: normalizedLang }
+//               },
+//               images: true,
+//               category: {
+//                 select: {
+//                   id: true,
+//                   name: true,
+//                   imageUrl: true
+//                 }
+//               }
+//             }
+//           }
+//         }
+//       });
+//       discountedProducts.push(discountedProduct);
+//     }
+
+//    const ll =  await tx.coupon.update({
+//       where: { id: coupon.id },
+//       data: {
+//         usedCount: { increment: 1 }
+//       }
+//     });
+
+
+//     // Format products with translations filtered by language
+//     const formattedProducts = discountedProducts
+//       .filter(dp => dp.product.translations.length > 0)
+//       .map(dp => {
+//         const translation = dp.product.translations[0];
+        
+//         return {
+//           id: dp.product.id,
+//           translations: dp.product.translations,
+//           images: dp.product.images?.map(img => img.url) || [],
+//           categoryName: dp.product.category?.name || 'Uncategorized',
+//           categoryImage: dp.product.category?.imageUrl || null,
+//           originalPrice: parseFloat(dp.originalPrice),
+//           price: parseFloat(dp.discountPrice),
+//           discountAmount: parseFloat((dp.originalPrice - dp.discountPrice).toFixed(2)),
+//           discountPercentage: coupon.type === 'PERCENT'
+//             ? coupon.discount
+//             : parseFloat((((dp.originalPrice - dp.discountPrice) / dp.originalPrice) * 100).toFixed(1))
+//         };
+//       });
+
+//     return {
+//       coupon: {
+//         id: coupon.id,
+//         code: coupon.code,
+//         discount: coupon.discount,
+//         type: coupon.type,
+//         expiresAt
+//       },
+//       products: formattedProducts
+//     };
+//   });
+// };
 const applyCouponToProducts = async (lang, coupon, deviceId) => {
   const expiresAt = coupon.validTo;
+  const normalizedLang = normalizeLanguage(lang);
 
   const products = await prisma.product.findMany({
-    where: { stock: { gt: 0 } },
+    where: { 
+      stock: { gt: 0 },
+      translations: {
+        some: { language: normalizedLang }
+      }
+    },
     include: {
       translations: {
         where: {
-          language: normalizeLanguage(lang)
+          language: normalizedLang
         }
       },
       images: true,
-      category: true
+      category: {
+        select: {
+          id: true,
+          name: true,
+          imageUrl: true
+        }
+      }
     }
   });
-
+console.log("productsall: ",products)
   const couponData = await prisma.coupon.findUnique({
     where: { id: coupon.id, isActive: true },
     select: {
@@ -111,6 +476,7 @@ const applyCouponToProducts = async (lang, coupon, deviceId) => {
       usedCount: true
     }
   });
+  console.log("productsall cou: ",couponData)
 
   if (!couponData) {
     throw new CustomError('Coupon not found or inactive', 404);
@@ -120,77 +486,106 @@ const applyCouponToProducts = async (lang, coupon, deviceId) => {
     throw new CustomError('This coupon has reached its maximum usage limit', 400);
   }
 
-  return await prisma.$transaction(async (tx) => {
-    const couponUsage = await tx.couponUsage.create({
+
+  const couponUsage = await prisma.couponUsage.create({
+    data: {
+      coupon: { connect: { id: coupon.id } },
+      deviceId,
+      expiresAt,
+      usedAt: new Date()
+    }
+  });
+
+  const discountedProducts = [];
+  
+  // Create discounted products
+  for (const product of products) {
+    const { originalPrice, discountPrice } = applyDiscountToProduct(lang, product, coupon);
+    const discountedProduct = await prisma.discountedProduct.create({
       data: {
         coupon: { connect: { id: coupon.id } },
-        deviceId,
+        product: { connect: { id: product.id } },
+        CouponUsage: { connect: { id: couponUsage.id } },
+        originalPrice,
+        discountPrice,
         expiresAt,
-        usedAt: new Date()
-      }
-    });
-
-    const discountedProducts = [];
-
-    for (const product of products) {
-      const { originalPrice, discountPrice } = applyDiscountToProduct(lang,product, coupon);
-      const discountedProduct = await tx.discountedProduct.create({
-        data: {
-          coupon: { connect: { id: coupon.id } },
-          product: { connect: { id: product.id } },
-          CouponUsage: { connect: { id: couponUsage.id } },
-          originalPrice,
-          discountPrice,
-          expiresAt,
-          deviceId
-        },
-        include: {
-          product: {
-            include: {
-              translations: {
-                where: { language: normalizeLanguage(lang) }
-              },
-              images: true,
-              category: true
+        deviceId
+      },
+      include: {
+        product: {
+          include: {
+            translations: {
+              where: { language: normalizedLang }
+            },
+            images: true,
+            category: {
+              select: {
+                id: true,
+                name: true,
+                imageUrl: true
+              }
             }
           }
         }
-      });
-      discountedProducts.push(discountedProduct);
-    }
-
-    await tx.coupon.update({
-      where: { id: coupon.id },
-      data: {
-        usedCount: { increment: 1 }
       }
     });
+    discountedProducts.push(discountedProduct);
+  }
+    console.log("discount proucts: ",discountedProducts)
 
-    const formattedProducts = discountedProducts.map(dp => ({
-      id: dp.product.id,
-      translations: dp.product.translations,
-      images: dp.product.images?.map(img => img.url),
-      originalPrice: parseFloat(dp.originalPrice),
-      price: parseFloat(dp.discountPrice),
-      discountAmount: parseFloat((dp.originalPrice - dp.discountPrice).toFixed(2)),
-      discountPercentage: coupon.type === 'PERCENT'
-        ? coupon.discount
-        : parseFloat((((dp.originalPrice - dp.discountPrice) / dp.originalPrice) * 100).toFixed(1)),
-      expiresAt: dp.expiresAt
-    }));
 
-    return {
+  // Update coupon usage count
+  await prisma.coupon.update({
+    where: { id: coupon.id },
+    data: {
+      usedCount: { increment: 1 }
+    }
+  });
+
+  // Format products with translations filtered by language
+  const formattedProducts = discountedProducts
+    .filter(dp => dp.product.translations.length > 0)
+    .map(dp => {
+      return {
+        id: dp.product.id,
+        translations: dp.product.translations,
+        images: dp.product.images?.map(img => img.url) || [],
+        categoryName: dp.product.category?.name || 'Uncategorized',
+        categoryImage: dp.product.category?.imageUrl || null,
+        originalPrice: parseFloat(dp.originalPrice),
+        price: parseFloat(dp.discountPrice),
+        discountAmount: parseFloat((dp.originalPrice - dp.discountPrice).toFixed(2)),
+        discountPercentage: coupon.type === 'PERCENT'
+          ? coupon.discount
+          : parseFloat((((dp.originalPrice - dp.discountPrice) / dp.originalPrice) * 100).toFixed(1))
+      };
+    });
+
+    console.log("translation: ",formattedProducts)
+    console.log({
+    coupon: {
       id: coupon.id,
       code: coupon.code,
       discount: coupon.discount,
       type: coupon.type,
-      expiresAt,
-      affectedProducts: formattedProducts.length,
-      products: formattedProducts
-    };
-  });
-};
+      expiresAt
+    },
+    products: formattedProducts
+  })
+  const product = {
+    coupon: {
+      id: coupon.id,
+      code: coupon.code,
+      discount: coupon.discount,
+      type: coupon.type,
+      expiresAt
+    },
+    products: formattedProducts
+  }
+  console.log("prouct: service : ",product)
+  return product;
 
+};
 
 const useCoupon = async (lang, code, deviceId) => {
   if (!deviceId) {

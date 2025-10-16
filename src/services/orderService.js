@@ -2,25 +2,52 @@ const prisma = require('../prisma/prisma');
 const CustomError = require('../errors/CustomError');
 
 class OrderService {
+  async calculateDeliveryFee(provinceId, weight) {
+    if (weight <= 0) {
+      return 0;
+    }
+
+    const deliveryFeeConfig = await prisma.deliveryFee.findFirst({
+      where: {
+        provinceId,
+      },
+      orderBy: {
+        minWeight: 'desc'
+      }
+    });
+
+    if (!deliveryFeeConfig) {
+      const baseFee = 70;
+      const additionalKgFee = 7;
+      const additionalWeight = Math.ceil(Math.max(0, weight - 1));
+      return baseFee + (additionalWeight * additionalKgFee);
+    }
+
+    const baseFee = deliveryFeeConfig.baseFee;
+    const additionalKgFee = deliveryFeeConfig.additionalFeePerKg;
+    const additionalWeight = Math.ceil(Math.max(0, weight - 1));
+
+    return baseFee + (additionalWeight * additionalKgFee);
+  }
+
   async createOrder(userFirstName, userLastName, provinceId, city, address, phoneNumber, secondPhoneNumber, items) {
     const province = await prisma.province.findUnique({
       where: { id: provinceId },
-      select: { id: true, code: true }
+      select: { id: true }
     });
 
     if (!province) {
       throw new CustomError('Invalid province', 400);
     }
-
+    let totalFee = 0;
     let totalPrice = 0;
     const orderItems = [];
-    
+
     for (const item of items) {
       const product = await prisma.product.findUnique({
         where: { id: item.productId }
       });
 
-      console.log("Product",product)
       if (!product) {
         throw new CustomError('product_not_found', 404);
       }
@@ -30,10 +57,11 @@ class OrderService {
       }
 
       totalPrice += product.price * item.quantity;
+      totalFee += await this.calculateDeliveryFee(provinceId, product.weight)
       orderItems.push({
         productId: product.id,
         quantity: item.quantity,
-        price: product.price
+        price: product.price,
       });
     }
 
@@ -51,27 +79,31 @@ class OrderService {
         data: {
           province: {
             connect: { id: provinceId }
-          },
-          city,
-          address,
-          phoneNumber,
-          secondPhoneNumber,
-          userFirstName,
-          userLastName,
-          totalPrice,
-          status: 'pending',
-          orderItems: {
-            create: orderItems
-          }
+          }, city, address, phoneNumber, secondPhoneNumber, userFirstName, userLastName, totalPrice, totalFee: parseFloat(totalFee), status: 'pending', orderItems: { create: orderItems }
         },
         include: {
           orderItems: {
             include: {
-              product: true
+              product: {
+                select: {
+                  id: true,
+                  price: true,
+                  weight: true,
+                  rank: true,
+                  images: {
+                    where: {
+                      isPrimary: true
+                    }, select: {
+                      url: true
+                    }
+                  },
+                  translations: true
+                }
+              }
             }
           }
         }
-      });
+      }, { timeout: 1000 });
     });
 
     return order;
@@ -82,16 +114,24 @@ class OrderService {
       include: {
         orderItems: {
           include: {
-            product: true
+            product: {
+              select: {
+                id: true,
+                weight: true,
+                price: true,
+                rank: true,
+                images: {
+                  where: {
+                    isPrimary: true
+                  }, select: {
+                    url: true
+                  }
+                },
+                translations: true
+              }
+            }
           }
         },
-        province: {
-          select: {
-            id: true,
-            code: true
-            
-          }
-        }
       },
       orderBy: {
         createdAt: 'desc'
@@ -105,13 +145,22 @@ class OrderService {
       include: {
         orderItems: {
           include: {
-            product: true
-          }
-        },
-        province: {
-          select: {
-            id: true,
-            name: true
+            product: {
+              select: {
+                id: true,
+                weight: true,
+                price: true,
+                rank: true,
+                images: {
+                  where: {
+                    isPrimary: true
+                  }, select: {
+                    url: true
+                  }
+                },
+                translations: true
+              }
+            }
           }
         }
       }
@@ -132,7 +181,22 @@ class OrderService {
       include: {
         orderItems: {
           include: {
-            product: true
+            product: {
+              select: {
+                id: true,
+                weight: true,
+                price: true,
+                rank: true,
+                images: {
+                  where: {
+                    isPrimary: true
+                  }, select: {
+                    url: true
+                  }
+                },
+                translations: true
+              }
+            }
           }
         }
       }

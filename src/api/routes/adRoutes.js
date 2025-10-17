@@ -7,6 +7,7 @@ const allowTo = require('../../middleware/allowTo')
 router.post('/:productId/products',verifyToken,allowTo('ADMIN'), adController.createAd);
 router.delete('/:id', verifyToken,allowTo('ADMIN'),adController.deleteAd);
 router.get('/:id', adController.getAd);
+router.get('/',adController.getAllAds)
 
 
 module.exports = router;

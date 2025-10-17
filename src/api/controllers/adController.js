@@ -43,10 +43,19 @@ const getAd = asyncErrorHandler(async (req, res, next) => {
     data: ad,
   });
 });
+const getAllAds = asyncErrorHandler(async(req,res,next)=>{
+  // const lang =  req.
+  const ads = await adServices.getAllAds();
+  res.status(200).json({
+    status:status.SUCCESS,
+    data: ads
+  })
+})
 
 
 module.exports = {
   createAd,
   deleteAd,
-  getAd
+  getAd,
+  getAllAds
 };

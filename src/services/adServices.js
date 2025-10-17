@@ -1,6 +1,28 @@
 const prisma = require('../prisma/prisma');
 const CustomError = require('../errors/CustomError');
 
+const deactivateExpiredAds = async () => {
+  const now = new Date();
+  const expiredAds = await prisma.ad.findMany({
+    where: {
+      isActive: true,
+      endDate: { lt: now },
+    },
+  });
+
+  if (expiredAds.length === 0) return;
+
+  await prisma.ad.updateMany({
+    where: {
+      isActive: true,
+      endDate: { lt: now },
+    },
+    data: {
+      isActive: false,
+    },
+  });
+};
+
 const createAd = async ({ isActive = false, discountValue, endDate, productId }) => {
 
   const product = await prisma.product.findUnique({ where: { id: productId } });
@@ -8,6 +30,10 @@ const createAd = async ({ isActive = false, discountValue, endDate, productId })
     throw new CustomError('Product not found', 404);
   }
 
+  let end = new Date(endDate)
+  if (end < new Date()) {
+    throw new CustomError("The end date should be in future ", 400);
+  }
   const ad = await prisma.ad.create({
     data: {
       isActive: true,
@@ -19,12 +45,12 @@ const createAd = async ({ isActive = false, discountValue, endDate, productId })
       product: true,
     }
   });
-  let discount=0;
-  if (product.discount!==0){
-      discount = product.discount; 
+  let discount = 0;
+  if (product.discount !== 0) {
+    discount = product.discount;
 
   }
-    
+
   let baseDiscount = product.discount || 0;
   const priceAfterBaseDiscount = product.price - (product.price * (baseDiscount / 100));
   const discountedPrice = priceAfterBaseDiscount - (priceAfterBaseDiscount * (discountValue / 100));
@@ -48,6 +74,7 @@ const createAd = async ({ isActive = false, discountValue, endDate, productId })
 
 
 const deleteAd = async (id) => {
+  await deactivateExpiredAds();
   const ad = await prisma.ad.findUnique({ where: { id } });
 
   if (!ad) {
@@ -60,8 +87,10 @@ const deleteAd = async (id) => {
 };
 
 const getAdById = async (id) => {
+  await deactivateExpiredAds();
   const ad = await prisma.ad.findUnique({
     where: { id },
+
     include: {
       product: true,
     },
@@ -81,6 +110,7 @@ const getAdById = async (id) => {
     discountValue: ad.discountValue,
     startDate: ad.startDate,
     endDate: ad.endDate,
+    isActive: ad.isActive,
     product: {
       id: ad.product.id,
       name: ad.product.name,
@@ -94,9 +124,26 @@ const getAdById = async (id) => {
 };
 
 
+const getAllAds = async () => {
+  await deactivateExpiredAds();
+  const ads = await prisma.ad.findMany({
+    select: {
+      id: true,
+      isActive: true,
+      discountValue: true,
+      startDate: true,
+      endDate: true,
+      productId: true
+    }
+  })
+
+  return ads;
+}
+
 module.exports = {
   createAd,
   deleteAd,
   getAdById,
+  getAllAds
 
 };

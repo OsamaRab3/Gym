@@ -13,9 +13,28 @@ const ensureProductExists = async (productId) => {
     throw new CustomError('coupon_product_not_found', 404)
   }
 }
+const deactivateExpiredCoupons = async()=>{
+  const now = new Date(); 
+  const expiredCoupon = await prisma.coupon.findMany({
+    where:{
+      isActive: true,
+      validTo:{lt: now}
+    }
+  })
+  if (expiredCoupon.length===0) return;
+   await prisma.coupon.updateMany({
+    where:{
+      isActive: true,
+      validTo:{lt: now}
+    },
+    data:{
+      isActive: false
+    }
+   }) 
+}
 
 const createCoupon = async ({ code, discount, type = 'PERCENT', validFrom, validTo, isActive = false }) => {
-
+  await deactivateExpiredCoupons();
   const existing = await prisma.coupon.findUnique({ where: { code } })
   if (existing) {
     throw new CustomError('coupon_code_exists', 409)
@@ -42,6 +61,7 @@ const createCoupon = async ({ code, discount, type = 'PERCENT', validFrom, valid
 }
 
 const deleteCoupon = async (id) => {
+  await deactivateExpiredCoupons();
   return await prisma.$transaction(async (prisma) => {
     const coupon = await prisma.coupon.findUnique({
       where: { id },
@@ -104,6 +124,7 @@ const deleteCoupon = async (id) => {
 }
 
 const getAllCoupons = async () => {
+  await deactivateExpiredCoupons();
   const coupons = await prisma.coupon.findMany({
     orderBy: { createdAt: 'desc' }
   })
@@ -111,6 +132,7 @@ const getAllCoupons = async () => {
 }
 
 const getCouponById = async (id) => {
+  await deactivateExpiredCoupons();
   const coupon = await prisma.coupon.findUnique({
     where: { id },
   })
@@ -438,6 +460,7 @@ const applyDiscountToProduct = (lang,product, coupon) => {
 //   });
 // };
 const applyCouponToProducts = async (lang, coupon, deviceId) => {
+  await deactivateExpiredCoupons();
   const expiresAt = coupon.validTo;
   const normalizedLang = normalizeLanguage(lang);
 
@@ -464,7 +487,7 @@ const applyCouponToProducts = async (lang, coupon, deviceId) => {
       }
     }
   });
-console.log("productsall: ",products)
+
   const couponData = await prisma.coupon.findUnique({
     where: { id: coupon.id, isActive: true },
     select: {
@@ -476,7 +499,6 @@ console.log("productsall: ",products)
       usedCount: true
     }
   });
-  console.log("productsall cou: ",couponData)
 
   if (!couponData) {
     throw new CustomError('Coupon not found or inactive', 404);
@@ -531,10 +553,7 @@ console.log("productsall: ",products)
     });
     discountedProducts.push(discountedProduct);
   }
-    console.log("discount proucts: ",discountedProducts)
 
-
-  // Update coupon usage count
   await prisma.coupon.update({
     where: { id: coupon.id },
     data: {
@@ -542,7 +561,6 @@ console.log("productsall: ",products)
     }
   });
 
-  // Format products with translations filtered by language
   const formattedProducts = discountedProducts
     .filter(dp => dp.product.translations.length > 0)
     .map(dp => {
@@ -561,17 +579,6 @@ console.log("productsall: ",products)
       };
     });
 
-    console.log("translation: ",formattedProducts)
-    console.log({
-    coupon: {
-      id: coupon.id,
-      code: coupon.code,
-      discount: coupon.discount,
-      type: coupon.type,
-      expiresAt
-    },
-    products: formattedProducts
-  })
   const product = {
     coupon: {
       id: coupon.id,
@@ -582,7 +589,6 @@ console.log("productsall: ",products)
     },
     products: formattedProducts
   }
-  console.log("prouct: service : ",product)
   return product;
 
 };
@@ -618,7 +624,6 @@ const useCoupon = async (lang, code, deviceId) => {
     throw new CustomError('This coupon has reached its maximum usage limit', 400);
   }
 
-  // Check if this device has already used this coupon
   const existingUsage = await prisma.couponUsage.findFirst({
     where: {
       couponId: coupon.id,
@@ -637,6 +642,7 @@ const useCoupon = async (lang, code, deviceId) => {
 
 
 const getDiscountedProducts = async (lang = "AR", deviceId) => {
+  await deactivateExpiredCoupons();
   const now = new Date();
   const couponUsage = await prisma.couponUsage.findFirst({
     where: {

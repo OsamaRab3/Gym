@@ -173,6 +173,21 @@ const searchProducts = asyncErrorHandler(async (req, res) => {
     });
 });
 
+
+const filterProduct = asyncErrorHandler(async (req, res, next) => {
+    const { lang = 'AR', category } = req.query;
+    
+    if (!category) {
+        return next(new CustomError('Category is required', 400));
+    }
+
+    const products = await productServices.filterProduct(lang, category);
+
+    res.status(200).json({
+        status: status.SUCCESS,
+        data: products
+    });
+});
 module.exports = {
     createProduct,
     deleteProduct,
@@ -181,5 +196,6 @@ module.exports = {
     updateProduct,
     updateProductRank,
     setPrimaryImage,
-    searchProducts
+    searchProducts,
+    filterProduct
 };

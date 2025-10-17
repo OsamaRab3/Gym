@@ -409,7 +409,41 @@ const searchProducts = async (query, language = 'AR') => {
         take: 10
     });
 };
+const filterProduct = async(lang,categoryName)=>{
+    const language = normalizeLanguage(lang);
+    const existing = await prisma.category.findUnique({
+        where:{
+            name: categoryName
+        }
+    })
+    if(!existing){
+        throw new CustomError(`This categroy ${categoryName} not foud`,404);
+    }
 
+    const products = await prisma.category.findMany({
+        where:{
+            translations:{
+                some:{language}
+            },
+            name:categoryName
+        },
+        include:{
+            translations:true,
+            products: {
+                where:{
+                    translations:{some:{language}}
+                },
+                include:{
+                    translations:true,
+                    images: true
+                }
+            }
+            
+        }
+    })
+
+    return products; 
+}
 module.exports = {
     createProduct,
     deleteProduct,
@@ -418,5 +452,6 @@ module.exports = {
     updateProduct,
     updateProductRank,
     setPrimaryImage,
-    searchProducts
+    searchProducts,
+    filterProduct
 };

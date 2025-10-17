@@ -7,8 +7,8 @@ const allowTo = require('../../middleware/allowTo');
 const { multupload } = require('../../utils/fileUpload');
 
 
-const { 
-  createProductValidation, 
+const {
+  createProductValidation,
   // updateProductValidation, 
   // idParamValidation, 
   // updateProductRankValidation,
@@ -21,12 +21,16 @@ const {
 router.route('/')
   .get(productController.getAllProducts)
   .post(
-    verifyToken, 
+    verifyToken,
     allowTo("ADMIN"),
-    multupload('images'), 
+    multupload('images'),
     createProductValidation,
     productController.createProduct
   );
+
+router.route('/category')
+  .get(productController.filterProduct)
+
 
 
 router.route('/:id')
@@ -38,15 +42,15 @@ router.route('/:id')
     productController.updateProduct
   )
   .delete(
-    verifyToken, 
-    allowTo("ADMIN"), 
+    verifyToken,
+    allowTo("ADMIN"),
     productController.deleteProduct
   );
 
 router.route('/:id/rank')
   .patch(
-    verifyToken, 
-    allowTo("ADMIN"), 
+    verifyToken,
+    allowTo("ADMIN"),
     productController.updateProductRank
   );
 
